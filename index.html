@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>台灣大富翁 - 平衡地圖版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc, arrayUnion, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'taiwan-monopoly-v7-map';
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const AVATARS = [
+            { id: 'ceo', emoji: '👨‍💼', color: '#0ea5e9' },
+            { id: 'dog', emoji: '🐶', color: '#8b5cf6' },
+            { id: 'cat', emoji: '🐱', color: '#f59e0b' },
+            { id: 'ninja', emoji: '🥷', color: '#1f2937' },
+            { id: 'chef', emoji: '👨‍🍳', color: '#ef4444' },
+            { id: 'pilot', emoji: '👨‍✈️', color: '#6366f1' },
+            { id: 'alien', emoji: '👽', color: '#10b981' },
+            { id: 'robot', emoji: '🤖', color: '#64748b' },
+            { id: 'rabbit', emoji: '🐰', color: '#ec4899' },
+            { id: 'bear', emoji: '🐻', color: '#92400e' },
+            { id: 'ghost', emoji: '👻', color: '#94a3b8' },
+            { id: 'cowboy', emoji: '🤠', color: '#b45309' }
+        ];
+
+        // 重新編排的地圖，確保特殊格不連續
+        const TILES = [
+            { id: 0, name: "起點", type: "GO", icon: "🚩", grid: "9/11" },
+            { id: 1, name: "基隆", price: 1200, rent: 150, icon: "🚢", grid: "9/10" },
+            { id: 2, name: "台北", price: 6000, rent: 800, icon: "🏙️", grid: "9/9" },
+            { id: 3, name: "命運", type: "FATE", icon: "❓", grid: "9/8" },
+            { id: 4, name: "新北", price: 2400, rent: 300, icon: "🌉", grid: "9/7" },
+            { id: 5, name: "桃園", price: 2200, rent: 250, icon: "✈️", grid: "9/6" },
+            { id: 6, name: "高鐵", price: 4000, rent: 500, icon: "🚄", grid: "9/5" },
+            { id: 7, name: "新竹", price: 2000, rent: 220, icon: "🔬", grid: "9/4" },
+            { id: 8, name: "苗栗", price: 1800, rent: 200, icon: "🍓", grid: "9/3" },
+            { id: 9, name: "機遇", type: "CHANCE", icon: "✨", grid: "9/2" },
+            { id: 10, name: "看守所", type: "JAIL", icon: "⛓️", grid: "9/1" },
+            { id: 11, name: "台中", price: 3500, rent: 450, icon: "🥧", grid: "8/1" },
+            { id: 12, name: "彰化", price: 2000, rent: 220, icon: "⛩️", grid: "7/1" },
+            { id: 13, name: "所得稅", type: "TAX", icon: "💸", grid: "6/1" },
+            { id: 14, name: "南投", price: 1800, rent: 200, icon: "🌲", grid: "5/1" },
+            { id: 15, name: "日月潭", price: 3200, rent: 450, icon: "⛵", grid: "4/1" },
+            { id: 16, name: "命運", type: "FATE", icon: "❓", grid: "3/1" },
+            { id: 17, name: "雲林", price: 1600, rent: 180, icon: "🥬", grid: "2/1" },
+            { id: 18, name: "休息站", type: "PARK", icon: "☕", grid: "1/1" },
+            { id: 19, name: "嘉義", price: 1800, rent: 200, icon: "🐔", grid: "1/2" },
+            { id: 20, name: "台南", price: 3000, rent: 400, icon: "🏯", grid: "1/3" },
+            { id: 21, name: "台鐵", price: 3000, rent: 350, icon: "🚆", grid: "1/4" },
+            { id: 22, name: "高雄", price: 4000, rent: 550, icon: "⚓", grid: "1/5" },
+            { id: 23, name: "屏東", price: 1600, rent: 180, icon: "🍍", grid: "1/6" },
+            { id: 24, name: "機遇", type: "CHANCE", icon: "✨", grid: "1/7" },
+            { id: 25, name: "墾丁", price: 2200, rent: 250, icon: "🏖️", grid: "1/8" },
+            { id: 26, name: "台東", price: 2000, rent: 220, icon: "🎈", grid: "1/9" },
+            { id: 27, name: "花蓮", price: 2200, rent: 250, icon: "🏞️", grid: "1/10" },
+            { id: 28, name: "監獄", type: "GOJAIL", icon: "👮", grid: "1/11" },
+            { id: 29, name: "太魯閣", price: 2800, rent: 350, icon: "⛰️", grid: "2/11" },
+            { id: 30, name: "澎湖", price: 1500, rent: 150, icon: "🌊", grid: "3/11" },
+            { id: 31, name: "命運", type: "FATE", icon: "❓", grid: "4/11" },
+            { id: 32, name: "宜蘭", price: 2000, rent: 220, icon: "🦢", grid: "5/11" },
+            { id: 33, name: "金門", price: 1500, rent: 150, icon: "🔪", grid: "6/11" },
+            { id: 34, name: "台北101", price: 9000, rent: 2000, icon: "💎", grid: "7/11" },
+            { id: 35, name: "總統府", price: 10000, rent: 2500, icon: "🏛️", grid: "8/11" }
+        ];
+
+        let S = { roomId: '', myId: '', players: [], turn: 0, owners: Array(36).fill(null), status: 'setup', messages: [], diceValue: 0, lastDiceTime: 0 };
+        let visualPositions = {};
+        let myAvatarId = 'ceo';
+        let unsubscribeRoom = null;
+
+        window.initGame = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
+            onAuthStateChanged(auth, (u) => { if (u) { S.myId = u.uid; listenToRooms(); } });
+            renderAvatarOptions();
+        };
+
+        window.setAvatar = (id) => { myAvatarId = id; renderAvatarOptions(); };
+
+        const renderAvatarOptions = () => {
+            const container = document.getElementById('avatar-selector');
+            if(!container) return;
+            container.innerHTML = AVATARS.map(a => `
+                <div onclick="window.setAvatar('${a.id}')" class="flex flex-col items-center cursor-pointer transition transform hover:scale-110">
+                    <div class="text-4xl p-3 rounded-2xl border-4 ${myAvatarId === a.id ? 'border-sky-500 bg-sky-50 shadow-lg' : 'border-slate-100 bg-white'}">
+                        ${a.emoji}
+                    </div>
+                </div>
+            `).join('');
+        };
+
+        window.createRoom = async () => {
+            const name = document.getElementById('user-name').value || "杰哥";
+            const code = Math.random().toString(36).substring(2, 6).toUpperCase();
+            const data = {
+                roomId: code, turn: 0, owners: Array(36).fill(null), status: 'waiting', diceValue: 0, lastDiceTime: 0,
+                players: [{ uid: S.myId, name, avatarId: myAvatarId, money: 30000, pos: 0 }],
+                messages: ["🎮 冒險開始！"]
+            };
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code), data);
+            S.roomId = code; listenToRoom();
+        };
+
+        window.joinRoom = async (code) => {
+            const name = document.getElementById('user-name').value || "大富翁";
+            const ref = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code);
+            const snap = await getDoc(ref);
+            if (!snap.exists()) return;
+            const players = snap.data().players;
+            if (!players.find(p => p.uid === S.myId)) {
+                await updateDoc(ref, { 
+                    players: arrayUnion({ uid: S.myId, name, avatarId: myAvatarId, money: 30000, pos: 0 }),
+                    messages: arrayUnion(`👋 ${name} 加入了遊戲`)
+                });
+            }
+            S.roomId = code; listenToRoom();
+        };
+
+        const listenToRooms = () => {
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'rooms'), (snap) => {
+                const list = document.getElementById('room-list');
+                if(!list) return;
+                list.innerHTML = snap.docs.filter(d => d.data().status === 'waiting').map(d => `
+                    <div onclick="window.joinRoom('${d.id}')" class="p-4 bg-white border-4 border-slate-100 rounded-3xl mb-3 flex justify-between items-center cursor-pointer hover:bg-sky-50 transition">
+                        <span class="font-black text-xl">#${d.id}</span>
+                        <span class="text-sky-500 font-bold">加入房間</span>
+                    </div>
+                `).join('') || '<p class="text-slate-400 text-center py-4">目前沒人開房...</p>';
+            });
+        };
+
+        const listenToRoom = () => {
+            if (unsubscribeRoom) unsubscribeRoom();
+            const ref = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', S.roomId);
+            unsubscribeRoom = onSnapshot(ref, (snap) => {
+                if (!snap.exists()) return;
+                const d = snap.data();
+                const oldDiceTime = S.lastDiceTime;
+                S = { ...S, ...d };
+                S.players.forEach(p => { if (visualPositions[p.uid] === undefined) visualPositions[p.uid] = p.pos; });
+                if (S.status === 'playing') {
+                    showView('game-view');
+                    if (S.diceValue > 0 && S.lastDiceTime !== oldDiceTime) animateDice(S.diceValue);
+                } else {
+                    showView('lobby-view');
+                    document.getElementById('lobby-code').innerText = S.roomId;
+                    renderLobbyPlayers();
+                }
+                updateUI(); 
+                renderBoard();
+            });
+        };
+
+        const renderLobbyPlayers = () => {
+            const list = document.getElementById('lobby-players');
+            list.innerHTML = S.players.map(p => `
+                <div class="flex items-center gap-4 bg-slate-50 p-4 rounded-3xl border-2 border-slate-100">
+                    <span class="text-4xl">${AVATARS.find(a=>a.id===p.avatarId).emoji}</span>
+                    <span class="font-black text-xl">${p.name}</span>
+                </div>
+            `).join('');
+            const isHost = S.players[0]?.uid === S.myId;
+            document.getElementById('start-btn').classList.toggle('hidden', !isHost);
+        };
+
+        const animateDice = (n) => {
+            const cube = document.getElementById('dice-cube');
+            const rots = { 1:[0,0], 2:[-90,0], 3:[0,-90], 4:[0,90], 5:[90,0], 6:[180,0] };
+            cube.style.transform = `rotateX(${1080 + rots[n][0]}deg) rotateY(${1080 + rots[n][1]}deg)`;
+            setTimeout(() => movePlayer(S.turn, n), 1000);
+        };
+
+        const movePlayer = async (idx, steps) => {
+            const p = S.players[idx]; if (!p) return;
+            for (let i = 0; i < steps; i++) {
+                visualPositions[p.uid] = (visualPositions[p.uid] + 1) % 36;
+                renderBoard(); 
+                await new Promise(r => setTimeout(r, 200));
+            }
+            if (p.uid === S.myId) finalizeTurn(steps);
+        };
+
+        const finalizeTurn = async (steps) => {
+            const p = S.players[S.turn];
+            let nPos = (p.pos + steps) % 36;
+            let bonus = (p.pos + steps >= 36) ? 2000 : 0;
+            const up = [...S.players]; 
+            up[S.turn].pos = nPos; 
+            up[S.turn].money += bonus;
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', S.roomId), { players: up });
+            processAction(nPos);
+        };
+
+        window.roll = async () => {
+            if (S.players[S.turn]?.uid !== S.myId || S.diceValue > 0) return;
+            const val = Math.floor(Math.random()*6)+1;
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', S.roomId), { 
+                diceValue: val, lastDiceTime: Date.now() 
+            });
+        };
+
+        const processAction = async (pos) => {
+            const p = S.players[S.turn]; 
+            const t = TILES[pos]; 
+            const ownerIdx = S.owners[pos];
+            
+            if (ownerIdx === null && t.price) {
+                if (p.money >= t.price) {
+                    showModal(t.name, t.price, async () => {
+                        const u = [...S.players]; u[S.turn].money -= t.price;
+                        const o = [...S.owners]; o[pos] = S.turn;
+                        let msgs = [...(S.messages || []), `🏘️ ${p.name} 買下了 ${t.name}`].slice(-5);
+                        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', S.roomId), { players: u, owners: o, messages: msgs }); 
+                        endTurn();
+                    });
+                } else { endTurn(); }
+            } else if (ownerIdx !== null && ownerIdx !== S.turn) {
+                const u = [...S.players]; 
+                u[S.turn].money -= t.rent; u[ownerIdx].money += t.rent;
+                let msgs = [...(S.messages || []), `💰 ${p.name} 支付 $${t.rent} 給 ${S.players[ownerIdx].name}`].slice(-5);
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', S.roomId), { players: u, messages: msgs }); 
+                endTurn();
+            } else if (t.type === 'FATE' || t.type === 'CHANCE') {
+                const events = [
+                    { t: "刮刮樂中獎", v: 1000 }, { t: "交通違規罰款", v: -500 }, 
+                    { t: "收到生日紅包", v: 1500 }, { t: "掉進水溝", v: -200 }
+                ];
+                const ev = events[Math.floor(Math.random()*events.length)];
+                const u = [...S.players]; u[S.turn].money += ev.v;
+                let msgs = [...(S.messages || []), `🎲 ${p.name}: ${ev.t} (${ev.v > 0 ? '+' : ''}${ev.v})`].slice(-5);
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', S.roomId), { players: u, messages: msgs });
+                endTurn();
+            } else { endTurn(); }
+        };
+
+        const endTurn = async () => {
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', S.roomId), { 
+                turn: (S.turn + 1) % S.players.length, diceValue: 0 
+            });
+        };
+
+        const updateUI = () => {
+            const p = S.players[S.turn]; if(!p) return;
+            document.getElementById('player-info').innerHTML = S.players.map((pl,i) => `
+                <div class="p-3 rounded-2xl flex items-center gap-3 border-4 ${S.turn===i?'bg-sky-500 border-sky-300 text-white shadow-xl scale-105':'bg-white border-slate-100 text-slate-400'} transition-all">
+                    <span class="text-3xl">${AVATARS.find(a=>a.id===pl.avatarId).emoji}</span>
+                    <div class="flex flex-col min-w-[70px]">
+                        <span class="text-[10px] font-black truncate">${pl.name}</span>
+                        <span class="text-lg font-black">$${pl.money}</span>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('ticker').innerHTML = (S.messages || []).map(m => `
+                <div class="bg-white border-l-4 border-sky-500 px-3 py-2 mb-1 text-[11px] font-bold shadow-sm rounded-r-xl animate-fade-in">${m}</div>
+            `).join('');
+            document.getElementById('turn-hint').innerText = p.uid === S.myId ? "輪到你了！" : `${p.name} 行動中`;
+        };
+
+        const renderBoard = () => {
+            const board = document.getElementById('board');
+            const layer = document.getElementById('tokens-layer');
+            if(!board || !layer) return;
+            const rect = board.getBoundingClientRect();
+            layer.innerHTML = '';
+            TILES.forEach((t, i) => {
+                const el = document.getElementById(`tile-${t.id}`);
+                if(!el) return;
+                const ownerIdx = S.owners[i];
+                if(ownerIdx !== null) {
+                    el.style.border = `4px solid ${AVATARS.find(a=>a.id===S.players[ownerIdx].avatarId).color}`;
+                    el.style.background = `${AVATARS.find(a=>a.id===S.players[ownerIdx].avatarId).color}15`;
+                } else {
+                    el.style.border = `1px solid #f1f5f9`;
+                    el.style.background = `white`;
+                }
+            });
+            S.players.forEach((p, i) => {
+                const vPos = visualPositions[p.uid] !== undefined ? visualPositions[p.uid] : p.pos;
+                const tile = document.getElementById(`tile-${vPos}`);
+                if(!tile) return;
+                const tr = tile.getBoundingClientRect();
+                const token = document.createElement('div');
+                token.className = 'absolute z-50 w-8 h-8 rounded-full border-2 border-white shadow-md flex items-center justify-center text-xl transition-all duration-300';
+                token.style.backgroundColor = AVATARS.find(a=>a.id===p.avatarId).color;
+                token.style.left = `${(tr.left - rect.left) + tr.width/2 - 16 + (i*3)}px`;
+                token.style.top = `${(tr.top - rect.top) + tr.height/2 - 16 + (i*3)}px`;
+                token.innerText = AVATARS.find(a=>a.id===p.avatarId).emoji;
+                layer.appendChild(token);
+            });
+        };
+
+        function showView(id) {
+            ['setup-view', 'lobby-view', 'game-view'].forEach(v => document.getElementById(v).classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function showModal(n, p, cb) {
+            const m = document.getElementById('modal');
+            document.getElementById('modal-t').innerText = n;
+            document.getElementById('modal-v').innerText = `$${p}`;
+            m.classList.remove('hidden');
+            document.getElementById('btn-y').onclick = () => { m.classList.add('hidden'); cb(); };
+            document.getElementById('btn-n').onclick = () => { m.classList.add('hidden'); endTurn(); };
+        }
+
+        window.onload = () => {
+            window.initGame();
+            const b = document.getElementById('board');
+            TILES.forEach(t => {
+                const el = document.createElement('div'); el.id = `tile-${t.id}`;
+                el.className = 'tile-item'; el.style.gridArea = t.grid;
+                el.innerHTML = `
+                    <div class="tile-icon">${t.icon || ''}</div>
+                    <div class="tile-name">${t.name}</div>
+                    ${t.price ? `<div class="tile-price">$${t.price}</div>` : ''}
+                `;
+                b.appendChild(el);
+            });
+        };
+
+        window.startGameAction = async () => {
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', S.roomId), { status: 'playing' });
+        };
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@900&display=swap');
+        body { margin:0; font-family:'Noto Sans TC', sans-serif; background:#f8fafc; height:100vh; overflow:hidden; }
+        
+        #board { 
+            display: grid; 
+            grid-template-columns: 1.2fr repeat(9, 1fr) 1.2fr; 
+            grid-template-rows: 1.2fr repeat(7, 1fr) 1.2fr; 
+            width: 100vw; height: 100vh; position: relative; gap: 2px; background: #e2e8f0;
+        }
+
+        .tile-item {
+            background: white; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 4px; overflow: hidden;
+        }
+
+        .tile-name {
+            font-size: clamp(0.65rem, 1.3vw, 1.1rem); font-weight: 900; line-height: 1.1;
+            max-width: 90%; text-align: center; word-break: break-all; color: #1e293b;
+        }
+
+        .tile-icon { font-size: clamp(1.1rem, 2.8vw, 2.2rem); margin-bottom: 2px; }
+        .tile-price { font-size: clamp(0.6rem, 1vw, 0.85rem); color: #0ea5e9; font-weight: 800; }
+
+        #inner-ui { 
+            grid-area: 2 / 2 / 9 / 11; background: #ffffffcc; border-radius: 50px; margin: 10px; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; z-index: 10;
+            backdrop-filter: blur(10px); box-shadow: inset 0 0 50px rgba(0,0,0,0.03);
+        }
+
+        #inner-ui::after {
+            content: "TAIWAN"; position: absolute; font-size: 15vw; color: #f1f5f9; font-weight: 900; z-index: -1; transform: rotate(-5deg); opacity: 0.6;
+        }
+
+        #ticker { position: absolute; top: 15px; right: 15px; width: 180px; z-index: 20; }
+        #player-info { position: absolute; top: 15px; left: 15px; display: flex; flex-direction: column; gap: 8px; z-index: 20; }
+        
+        .dice-box { perspective: 1000px; width: 90px; height: 90px; cursor: pointer; }
+        .cube { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.8s cubic-bezier(0.17, 0.67, 0.83, 0.67); }
+        .face { position: absolute; width: 90px; height: 90px; background: white; border: 4px solid #f1f5f9; border-radius: 18px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        .dot { width: 14px; height: 14px; background: #0ea5e9; border-radius: 50%; position: absolute; }
+        .f1 .dot { width:22px; height:22px; background: #ef4444; }
+        .f2 .dot:nth-child(1) { top:15px; left:15px; } .f2 .dot:nth-child(2) { bottom:15px; right:15px; }
+        .f3 .dot:nth-child(1) { top:12px; left:12px; } .f3 .dot:nth-child(2) { top:38px; left:38px; } .f3 .dot:nth-child(3) { bottom:12px; right:12px; }
+        .f4 .dot:nth-child(1) { top:15px; left:15px; } .f4 .dot:nth-child(2) { top:15px; right:15px; } .f4 .dot:nth-child(3) { bottom:15px; left:15px; } .f4 .dot:nth-child(4) { bottom:15px; right:15px; }
+        .f5 .dot:nth-child(1) { top:15px; left:15px; } .f5 .dot:nth-child(2) { top:15px; right:15px; } .f5 .dot:nth-child(3) { top:38px; left:38px; } .f5 .dot:nth-child(4) { bottom:15px; left:15px; } .f5 .dot:nth-child(5) { bottom:15px; right:15px; }
+        .f6 .dot:nth-child(1) { top:15px; left:25px; } .f6 .dot:nth-child(2) { top:38px; left:25px; } .f6 .dot:nth-child(3) { bottom:15px; left:25px; } .f6 .dot:nth-child(4) { top:15px; right:25px; } .f6 .dot:nth-child(5) { top:38px; right:25px; } .f6 .dot:nth-child(6) { bottom:15px; right:25px; }
+
+        .f1 { transform: rotateY(0deg) translateZ(45px); } .f2 { transform: rotateX(90deg) translateZ(45px); }
+        .f3 { transform: rotateY(90deg) translateZ(45px); } .f4 { transform: rotateY(-90deg) translateZ(45px); }
+        .f5 { transform: rotateX(-90deg) translateZ(45px); } .f6 { transform: rotateY(180deg) translateZ(45px); }
+
+        @keyframes fade-in { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+        .animate-fade-in { animation: fade-in 0.3s ease-out forwards; }
+    </style>
+</head>
+<body>
+    <div id="setup-view" class="fixed inset-0 z-[1000] bg-white flex flex-col items-center justify-center p-6">
+        <h1 class="text-6xl font-black text-slate-900 mb-6 italic tracking-tighter">大富翁：台灣</h1>
+        <div id="avatar-selector" class="grid grid-cols-4 gap-4 mb-8"></div>
+        <input type="text" id="user-name" placeholder="輸入玩家名稱" class="w-full max-w-sm bg-slate-50 p-5 rounded-3xl border-4 border-slate-100 text-center text-2xl font-black mb-6 outline-none focus:border-sky-500">
+        <button onclick="createRoom()" class="w-full max-w-sm bg-slate-900 text-white py-5 rounded-3xl text-2xl font-black hover:bg-sky-600 transition shadow-xl">創建房間</button>
+        <div class="mt-8 w-full max-w-sm"><div id="room-list"></div></div>
+    </div>
+
+    <div id="lobby-view" class="fixed inset-0 z-[1100] bg-slate-900/50 backdrop-blur-md hidden flex items-center justify-center p-6">
+        <div class="bg-white p-10 rounded-[50px] text-center shadow-2xl w-full max-w-md">
+            <h2 id="lobby-code" class="text-6xl font-black text-sky-500 mb-8 italic">----</h2>
+            <div id="lobby-players" class="space-y-3 mb-8"></div>
+            <button id="start-btn" onclick="window.startGameAction()" class="w-full bg-sky-500 text-white py-6 rounded-3xl text-2xl font-black shadow-lg">開始遊戲</button>
+        </div>
+    </div>
+
+    <div id="game-view" class="hidden">
+        <div id="board">
+            <div id="tokens-layer" class="absolute inset-0 pointer-events-none"></div>
+            <div id="inner-ui">
+                <div id="player-info"></div>
+                <div id="ticker"></div>
+                <div onclick="window.roll()" class="dice-box"><div id="dice-cube" class="cube">
+                    <div class="face f1"><div class="dot"></div></div>
+                    <div class="face f2"><div class="dot"></div><div class="dot"></div></div>
+                    <div class="face f3"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+                    <div class="face f4"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+                    <div class="face f5"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+                    <div class="face f6"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+                </div></div>
+                <div id="turn-hint" class="mt-6 text-xl font-black text-sky-600 bg-white px-8 py-3 rounded-full border-2 border-sky-100 shadow-sm">準備中...</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal" class="fixed inset-0 z-[2000] bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-6">
+        <div class="bg-white rounded-[50px] p-10 w-full max-w-sm text-center shadow-2xl border-b-8 border-sky-500">
+            <h2 id="modal-t" class="text-3xl font-black text-slate-800 mb-2"></h2>
+            <div id="modal-v" class="text-5xl font-black text-sky-600 mb-10 italic">$0</div>
+            <div class="flex gap-4">
+                <button id="btn-y" class="flex-[2] bg-sky-500 text-white py-6 rounded-3xl text-2xl font-black hover:bg-sky-600">收購</button>
+                <button id="btn-n" class="flex-1 bg-slate-100 text-slate-400 py-6 rounded-3xl text-xl font-black">放棄</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
