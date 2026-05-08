@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>台灣大富翁 - 杰哥專屬版</title>
+    <title>台灣大富翁 - 地產大亨</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <!-- Firebase SDKs -->
@@ -17,34 +17,37 @@
         @keyframes moneyFloat { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-80px); opacity: 0; } }
         [v-cloak] { display: none; }
         .animate-popIn { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-        .jump-animation { animation: jump 0.45s ease-in-out; }
+        .jump-animation { animation: jump 0.4s ease-in-out; }
         .money-particle { position: absolute; font-weight: 900; font-size: 1.8rem; pointer-events: none; z-index: 1000; text-shadow: 0 0 8px rgba(0,0,0,0.3); animation: moneyFloat 1.2s ease-out forwards; }
-        .dice-container { width: 120px; height: 120px; perspective: 1000px; }
-        .dice { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 1s cubic-bezier(0.15, 0.85, 0.35, 1.2); }
-        .dice.rolling { animation: rotateDice 0.5s infinite linear; }
-        .face { position: absolute; width: 120px; height: 120px; background: white; border: 2px solid #e2e8f0; border-radius: 24px; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 15px rgba(0,0,0,0.05); }
-        .front  { transform: rotateY(0deg) translateZ(60px); }
-        .back   { transform: rotateY(180deg) translateZ(60px); }
-        .right  { transform: rotateY(90deg) translateZ(60px); }
-        .left   { transform: rotateY(-90deg) translateZ(60px); }
-        .top    { transform: rotateX(90deg) translateZ(60px); }
-        .bottom { transform: rotateX(-90deg) translateZ(60px); }
+        .dice-container { width: 100px; height: 100px; perspective: 1000px; }
+        .dice { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.8s cubic-bezier(0.15, 0.85, 0.35, 1.2); }
+        .dice.rolling { animation: rotateDice 0.3s infinite linear; }
+        .face { position: absolute; width: 100px; height: 100px; background: white; border: 2px solid #ddd; border-radius: 15px; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 10px rgba(0,0,0,0.1); }
+        /* 修正骰子角度，確保點數正對前方 */
         .show-1 { transform: rotateX(0deg) rotateY(0deg); }
-        .show-6 { transform: rotateX(0deg) rotateY(180deg); }
+        .show-2 { transform: rotateX(90deg) rotateY(0deg); }
         .show-3 { transform: rotateX(0deg) rotateY(-90deg); }
         .show-4 { transform: rotateX(0deg) rotateY(90deg); }
-        .show-2 { transform: rotateX(-90deg) rotateY(0deg); }
-        .show-5 { transform: rotateX(90deg) rotateY(0deg); }
+        .show-5 { transform: rotateX(-90deg) rotateY(0deg); }
+        .show-6 { transform: rotateX(180deg) rotateY(0deg); }
+        
+        .front  { transform: rotateY(0deg) translateZ(50px); }
+        .back   { transform: rotateY(180deg) translateZ(50px); }
+        .right  { transform: rotateY(90deg) translateZ(50px); }
+        .left   { transform: rotateY(-90deg) translateZ(50px); }
+        .top    { transform: rotateX(90deg) translateZ(50px); }
+        .bottom { transform: rotateX(-90deg) translateZ(50px); }
+        
         .dot { border-radius: 50%; }
         .dot-red { background-color: #ef4444; }
         .dot-black { background-color: #1e293b; }
     </style>
 </head>
-<body class="bg-slate-200 overflow-hidden font-sans">
+<body class="bg-slate-100 overflow-hidden font-sans">
     <div id="app" v-cloak>
         <!-- 登入畫面 -->
         <div v-if="view === 'login'" class="h-screen flex items-center justify-center p-4">
-            <div class="bg-white p-10 rounded-[40px] shadow-2xl text-center max-w-md w-full animate-popIn">
+            <div class="bg-white p-10 rounded-[40px] shadow-2xl text-center max-w-md w-full animate-popIn border-8 border-rose-50">
                 <h1 class="text-4xl font-black mb-8 text-slate-800 italic tracking-tighter uppercase">Taiwan Monopoly</h1>
                 <div class="grid grid-cols-4 gap-2 mb-8 bg-slate-50 p-4 rounded-3xl">
                     <button v-for="av in AVATARS" :key="av.id" @click="selectedAvatar = av" 
@@ -52,76 +55,70 @@
                         {{ av.emoji }}
                     </button>
                 </div>
-                <input v-model="userName" class="w-full bg-slate-100 p-4 rounded-2xl text-center font-bold mb-6 text-xl" placeholder="輸入名稱" />
+                <input v-model="userName" class="w-full bg-slate-100 p-4 rounded-2xl text-center font-bold mb-6 text-xl focus:ring-4 ring-rose-200 outline-none" placeholder="輸入名稱" />
                 <button @click="enterLobby" class="w-full bg-rose-400 text-white py-4 rounded-2xl font-black text-xl hover:bg-rose-500 shadow-lg">進入大廳</button>
             </div>
         </div>
 
         <!-- 大廳畫面 -->
         <div v-else-if="view === 'lobby'" class="h-screen p-6 flex flex-col items-center overflow-auto">
-            <div class="max-w-2xl w-full flex justify-between items-center bg-white p-6 rounded-3xl shadow-sm mb-6">
+            <div class="max-w-2xl w-full flex justify-between items-center bg-white p-6 rounded-3xl shadow-sm mb-6 border-b-4 border-slate-200">
                 <h2 class="text-2xl font-black text-slate-800">遊戲大廳</h2>
-                <button @click="createRoom" class="bg-rose-400 text-white px-8 py-3 rounded-xl font-bold">創建房間</button>
+                <button @click="createRoom" class="bg-rose-400 text-white px-8 py-3 rounded-xl font-bold hover:bg-rose-500">創建房間</button>
             </div>
             <div class="grid grid-cols-1 gap-4 w-full max-w-2xl">
                 <div v-if="rooms.length === 0" class="text-center py-10 text-slate-400 font-bold">目前沒有戰局</div>
-                <div v-for="r in rooms" :key="r.id" @click="joinRoom(r.id)" class="bg-white p-6 rounded-3xl shadow-sm flex justify-between items-center cursor-pointer hover:border-rose-300 border border-transparent transition-all">
+                <div v-for="r in rooms" :key="r.id" @click="joinRoom(r.id)" class="bg-white p-6 rounded-3xl shadow-sm flex justify-between items-center cursor-pointer hover:border-rose-300 border-2 border-transparent transition-all">
                     <div class="font-bold text-xl">{{ r.name }}</div>
-                    <div class="bg-slate-100 px-4 py-2 rounded-lg text-slate-500 font-bold">進入房間</div>
+                    <div class="bg-rose-50 text-rose-500 px-6 py-2 rounded-xl font-black">加入戰局</div>
                 </div>
             </div>
         </div>
 
         <!-- 等待畫面 -->
         <div v-else-if="view === 'waiting'" class="h-screen flex flex-col items-center justify-center p-6">
-            <div class="bg-white p-10 rounded-[40px] shadow-xl w-full max-w-md text-center">
-                <h2 class="text-2xl font-black mb-6">等待開戰...</h2>
+            <div class="bg-white p-10 rounded-[40px] shadow-xl w-full max-w-md text-center border-b-8 border-slate-200">
+                <h2 class="text-2xl font-black mb-6">戰隊集結中...</h2>
                 <div class="grid grid-cols-2 gap-4 mb-6">
-                    <div v-for="p in currentRoom?.players" :key="p.uid" class="bg-slate-50 p-4 rounded-3xl flex flex-col items-center border-2 border-white shadow-sm">
+                    <div v-for="p in currentRoom?.players" :key="p.uid" class="bg-slate-50 p-4 rounded-3xl flex flex-col items-center border-2 border-white shadow-sm animate-popIn">
                         <div class="text-4xl mb-2">{{ p.avatar.emoji }}</div>
                         <div class="font-bold">{{ p.name }}</div>
                     </div>
-                    <button v-if="currentRoom?.players.length < 4 && isHost" @click="addBot" class="border-2 border-dashed border-slate-200 rounded-3xl flex items-center justify-center p-4 text-slate-300 font-bold">+ 加入 AI</button>
+                    <button v-if="currentRoom?.players.length < 4 && isHost" @click="addBot" class="border-4 border-dashed border-slate-200 rounded-3xl flex items-center justify-center p-4 text-slate-300 font-bold hover:bg-slate-50 transition-colors">+ 加入 AI</button>
                 </div>
                 <div class="flex gap-4">
                     <button @click="view = 'lobby'" class="flex-1 bg-slate-100 text-slate-400 py-4 rounded-2xl font-black">返回</button>
-                    <button v-if="isHost" @click="startGame" class="flex-[2] bg-rose-400 text-white py-4 rounded-2xl font-black shadow-lg">開始遊戲</button>
+                    <button v-if="isHost" @click="startGame" class="flex-[2] bg-rose-400 text-white py-4 rounded-2xl font-black shadow-lg hover:bg-rose-500">開戰！</button>
                 </div>
             </div>
         </div>
 
         <!-- 遊戲畫面 -->
-        <div v-else-if="view === 'game'" class="h-screen flex items-center justify-center p-2 relative overflow-hidden">
+        <div v-else-if="view === 'game'" class="h-screen flex items-center justify-center p-2 relative overflow-hidden bg-slate-100">
+            <!-- 頂部通知 -->
             <div v-if="eventToast" class="absolute top-10 left-1/2 -translate-x-1/2 z-[300] bg-rose-500 text-white px-10 py-4 rounded-full shadow-2xl border-4 border-white font-black animate-bounce">{{ eventToast }}</div>
             
             <!-- 金錢漂浮特效 -->
-            <div v-for="p in moneyParticles" :key="p.id" class="money-particle" :style="{ left: p.x+'%', top: p.y+'%', color: p.amount.toString().startsWith('-') ? '#FF6B6B' : '#ffd700' }">
+            <div v-for="p in moneyParticles" :key="p.id" class="money-particle" :style="{ left: p.x+'%', top: p.y+'%', color: p.amount.toString().startsWith('-') ? '#FF6B6B' : '#FFD700' }">
                 {{ p.amount }}
             </div>
 
-            <!-- 勝利畫面 -->
-            <div v-if="winner" class="absolute inset-0 z-[600] bg-black/80 flex flex-col items-center justify-center text-white p-10 animate-popIn">
-                <div class="text-9xl mb-4 animate-bounce">🏆</div>
-                <h1 class="text-6xl font-black mb-2">{{ winner.name }}</h1>
-                <p class="text-2xl font-bold text-rose-400 mb-8">統治了台灣房地產！</p>
-                <button @click="location.reload()" class="bg-rose-400 px-10 py-4 rounded-2xl font-black text-2xl">再玩一局</button>
-            </div>
-
             <!-- 地圖棋盤 -->
-            <div class="bg-white rounded-[40px] shadow-2xl w-full h-full max-w-[1200px] max-h-[900px] grid grid-cols-11 grid-rows-9 p-2 gap-1 relative border-4 border-white">
-                <div v-for="(tile, i) in BOARD" :key="i" :style="getGridStyle(i)" class="relative border border-slate-100 flex flex-col items-center justify-center rounded-xl overflow-hidden shadow-sm p-1 bg-white">
-                    <div v-if="getOwner(i)" class="absolute bottom-0 inset-x-0 h-1" :style="{backgroundColor: getOwner(i).avatar.color}"></div>
-                    <div v-if="getLandLvl(i) > 0" class="absolute top-1 right-1 text-[10px] bg-white rounded px-1 font-bold shadow-sm">{{ ['🏠','🏘️','🏨'][getLandLvl(i)-1] }}</div>
+            <div class="bg-white rounded-[40px] shadow-2xl w-full h-full max-w-[1200px] max-h-[900px] grid grid-cols-11 grid-rows-9 p-2 gap-1 relative border-8 border-slate-200">
+                <div v-for="(tile, i) in BOARD" :key="i" :style="[getGridStyle(i), getTileBg(i)]" class="relative border border-slate-100 flex flex-col items-center justify-center rounded-xl overflow-hidden shadow-sm p-1 transition-colors duration-500">
+                    <!-- 地產標誌 -->
+                    <div v-if="getOwner(i)" class="absolute top-0 inset-x-0 h-2" :style="{backgroundColor: getOwner(i).avatar.color}"></div>
+                    <div v-if="getLandLvl(i) > 0" class="absolute top-2 right-1 text-[10px] bg-white/80 rounded px-1 font-bold shadow-sm">{{ ['🏠','🏘️','🏨'][getLandLvl(i)-1] }}</div>
                     
                     <div class="flex flex-col items-center justify-between w-full h-full py-1">
-                        <div class="text-[10px] md:text-[11px] font-black text-slate-800 text-center leading-tight">{{ tile.name }}</div>
-                        <div class="text-xl md:text-2xl my-0.5">{{ tile.icon }}</div>
-                        <div class="h-[12px]"><div v-if="tile.price" class="text-[10px] font-black text-rose-500">${{ tile.price }}</div></div>
+                        <div :class="['text-[10px] md:text-[11px] font-black text-center leading-tight', getOwner(i) ? 'text-white drop-shadow-md' : 'text-slate-800']">{{ tile.name }}</div>
+                        <div class="text-2xl md:text-3xl my-0.5">{{ tile.icon }}</div>
+                        <div class="h-[12px]"><div v-if="tile.price" :class="['text-[10px] font-black', getOwner(i) ? 'text-white' : 'text-rose-500']">${{ tile.price }}</div></div>
                     </div>
 
                     <!-- 玩家棋子 -->
                     <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-20 flex-wrap gap-0.5">
-                        <div v-for="p in getPlayersAt(i)" :key="p.uid" :class="['w-7 h-7 md:w-9 md:h-9 rounded-full border-2 border-white flex items-center justify-center text-lg shadow-md transition-all duration-300', jumpStates[p.uid] ? 'jump-animation' : '']" :style="{backgroundColor: p.avatar.color}">
+                        <div v-for="p in getPlayersAt(i)" :key="p.uid" :class="['w-8 h-8 md:w-10 md:h-10 rounded-full border-4 border-white flex items-center justify-center text-xl shadow-lg transition-all duration-300', jumpStates[p.uid] ? 'jump-animation' : '']" :style="{backgroundColor: p.avatar.color}">
                             {{ p.avatar.emoji }}
                         </div>
                     </div>
@@ -130,36 +127,44 @@
                 <!-- 中心區域 -->
                 <div class="col-start-2 col-end-11 row-start-2 row-end-9 bg-slate-50/50 rounded-3xl m-1 relative flex items-center justify-center">
                     <!-- 玩家資訊 -->
-                    <div class="absolute top-6 left-6 space-y-2">
-                        <div v-for="(p, idx) in currentRoom?.players" :key="p.uid" :class="['flex items-center gap-3 p-3 rounded-2xl transition-all', p.money < 0 ? 'opacity-40' : currentRoom.turn === idx ? 'bg-white shadow-xl ring-2 ring-rose-400 scale-105' : 'bg-white/40']">
-                            <div class="text-3xl">{{ p.money < 0 ? '💀' : p.avatar.emoji }}</div>
+                    <div class="absolute top-6 left-6 space-y-3">
+                        <div v-for="(p, idx) in currentRoom?.players" :key="p.uid" :class="['flex items-center gap-4 p-4 rounded-3xl transition-all', p.money < 0 ? 'opacity-30 scale-90 grayscale' : currentRoom.turn === idx ? 'bg-white shadow-2xl ring-4 ring-rose-400 scale-110 z-50' : 'bg-white/60']">
+                            <div class="relative">
+                                <div class="text-4xl">{{ p.money < 0 ? '💀' : p.avatar.emoji }}</div>
+                                <div v-if="currentRoom.turn === idx" class="absolute -top-2 -right-2 text-xl animate-bounce">👇</div>
+                            </div>
                             <div>
-                                <div class="text-[10px] font-black text-slate-500">{{ p.name }}</div>
-                                <div class="font-black text-lg text-rose-500">${{ p.money.toLocaleString() }}</div>
+                                <div class="text-xs font-black text-slate-400 uppercase">{{ p.name }}</div>
+                                <div class="font-black text-xl text-rose-500">${{ p.money.toLocaleString() }}</div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 骰子 -->
+                    <!-- 骰子區域 -->
                     <div class="flex flex-col items-center">
                         <div class="dice-container">
                             <div :class="['dice', rolling ? 'rolling' : '', 'show-' + dice]">
-                                <div class="face front"><div class="dot w-8 h-8 dot-red"></div></div>
-                                <div class="face back"><div class="grid grid-cols-2 gap-4"><div v-for="n in 6" class="dot w-4 h-4 dot-black"></div></div></div>
-                                <div class="face right"><div class="grid grid-cols-2 gap-4"><div v-for="n in 3" class="dot w-4 h-4 dot-black"></div></div></div>
-                                <div class="face left"><div class="grid grid-cols-2 gap-4"><div v-for="n in 4" class="dot w-4 h-4 dot-black"></div></div></div>
-                                <div class="face top"><div class="grid grid-cols-1 gap-4"><div v-for="n in 2" class="dot w-4 h-4 dot-black"></div></div></div>
-                                <div class="face bottom"><div class="grid grid-cols-1 gap-4"><div v-for="n in 5" class="dot w-4 h-4 dot-black"></div></div></div>
+                                <div class="face front"><div class="dot w-6 h-6 dot-red"></div></div>
+                                <div class="face back"><div class="grid grid-cols-2 gap-3"><div v-for="n in 6" class="dot w-3 h-3 dot-black"></div></div></div>
+                                <div class="face right"><div class="grid grid-cols-2 gap-3"><div v-for="n in 3" class="dot w-3 h-3 dot-black"></div></div></div>
+                                <div class="face left"><div class="grid grid-cols-2 gap-3"><div v-for="n in 4" class="dot w-3 h-3 dot-black"></div></div></div>
+                                <div class="face top"><div class="grid grid-cols-1 gap-3"><div v-for="n in 2" class="dot w-3 h-3 dot-black"></div></div></div>
+                                <div class="face bottom"><div class="grid grid-cols-1 gap-3"><div v-for="n in 5" class="dot w-3 h-3 dot-black"></div></div></div>
                             </div>
                         </div>
-                        <button v-if="canRoll" @click="rollDiceAction" class="mt-8 bg-rose-400 text-white px-12 py-4 rounded-full font-black text-xl shadow-xl hover:bg-rose-500 transition-all">擲骰子</button>
+                        <div class="mt-6 text-center">
+                            <button v-if="isMyTurn && !rolling && !isMoving" @click="rollDiceAction" class="bg-rose-400 text-white px-16 py-5 rounded-full font-black text-2xl shadow-xl hover:bg-rose-500 hover:scale-105 active:scale-95 transition-all">擲骰子</button>
+                            <div v-else-if="currentRoom.players[currentRoom.turn].isBot" class="text-rose-500 font-black text-xl animate-pulse">
+                                {{ currentRoom.players[currentRoom.turn].name }} 思考中...
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- 戰報 -->
-                    <div class="absolute right-6 bottom-6 w-64 bg-white/70 rounded-3xl p-5 shadow-xl border border-white">
-                        <h3 class="text-[10px] font-black text-slate-400 uppercase mb-2">即時戰報</h3>
-                        <div class="space-y-2">
-                            <div v-for="(log, idx) in roomLogs" :key="idx" :class="['text-sm font-bold p-2 rounded-xl', idx === 0 ? 'bg-rose-50 text-rose-600' : 'text-slate-400']">
+                    <!-- 戰報錄 -->
+                    <div class="absolute right-6 bottom-6 w-72 bg-white/80 backdrop-blur rounded-[32px] p-6 shadow-2xl border-b-4 border-slate-200 overflow-hidden">
+                        <h3 class="text-xs font-black text-slate-400 uppercase mb-3 tracking-widest">Live Feed 戰報</h3>
+                        <div class="space-y-3">
+                            <div v-for="(log, idx) in roomLogs" :key="idx" :class="['text-sm font-bold p-3 rounded-2xl transition-all', idx === 0 ? 'bg-rose-400 text-white scale-105 shadow-md' : 'text-slate-500 opacity-60']">
                                 {{ log }}
                             </div>
                         </div>
@@ -168,23 +173,33 @@
             </div>
 
             <!-- 互動彈窗 -->
-            <div v-if="modal" class="absolute inset-0 bg-black/40 backdrop-blur-sm z-[500] flex items-center justify-center">
-                <div class="bg-white p-10 rounded-[40px] shadow-2xl text-center max-w-sm w-full animate-popIn">
-                    <div class="text-6xl mb-4">{{ modal.tile.icon }}</div>
-                    <h2 class="text-2xl font-black mb-1">{{ modal.tile.name }}</h2>
-                    <div class="text-3xl font-black text-rose-500 mb-6">${{ modal.cost.toLocaleString() }}</div>
+            <div v-if="modal" class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm z-[500] flex items-center justify-center p-4">
+                <div class="bg-white p-10 rounded-[50px] shadow-2xl text-center max-w-sm w-full animate-popIn border-t-8 border-rose-400">
+                    <div class="text-7xl mb-4">{{ modal.tile.icon }}</div>
+                    <h2 class="text-3xl font-black mb-2 text-slate-800">{{ modal.tile.name }}</h2>
+                    <p class="text-slate-400 font-bold mb-6">要買下這塊寶地嗎？</p>
+                    <div class="text-4xl font-black text-rose-500 mb-8 border-y py-4 border-slate-100">${{ modal.cost.toLocaleString() }}</div>
                     <div class="flex gap-4">
-                        <button @click="handleAction(false)" class="flex-1 py-4 bg-slate-100 rounded-2xl font-black text-slate-400">取消</button>
-                        <button @click="handleAction(true)" class="flex-1 py-4 bg-rose-400 text-white rounded-2xl font-black shadow-lg">確認</button>
+                        <button @click="handleAction(false)" class="flex-1 py-5 bg-slate-100 rounded-3xl font-black text-slate-400 hover:bg-slate-200">算了</button>
+                        <button @click="handleAction(true)" class="flex-1 py-5 bg-rose-400 text-white rounded-3xl font-black shadow-lg hover:bg-rose-500">買了！</button>
                     </div>
                 </div>
+            </div>
+
+            <!-- 勝利者 -->
+            <div v-if="winner" class="absolute inset-0 z-[600] bg-slate-900/90 backdrop-blur-xl flex flex-col items-center justify-center text-white p-10 animate-popIn">
+                <div class="text-[150px] mb-4 animate-bounce">👑</div>
+                <h1 class="text-7xl font-black mb-4 tracking-tighter">{{ winner.name }}</h1>
+                <p class="text-3xl font-bold text-rose-400 mb-12">成為台灣最後的地產大亨！</p>
+                <button @click="location.reload()" class="bg-rose-400 px-16 py-6 rounded-[30px] font-black text-3xl shadow-2xl hover:bg-rose-500 transition-all active:scale-95">再開一局</button>
             </div>
         </div>
     </div>
 
     <script>
-        const { createApp, ref, computed, onMounted } = Vue;
+        const { createApp, ref, computed, onMounted, watch } = Vue;
 
+        // Firebase 設定保持不變
         const firebaseConfig = {
             apiKey: "AIzaSyC7C... (請更換為你的完整金鑰)", 
             authDomain: "monopoly-a3597.firebaseapp.com",
@@ -198,7 +213,9 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
-        const appId = "taiwan-monopoly-final";
+        const appId = "taiwan-monopoly-jiego-v2";
+
+        const BOT_NAMES = ["憲哥", "周董", "蔡依林", "館長", "林志玲", "阿信", "老蕭", "柯P", "蔡阿嘎"];
 
         const BOARD = [
             { id: 0, name: '起點', type: 'start', icon: '🚩' },
@@ -265,16 +282,19 @@
                 const eventToast = ref(null);
                 const winner = ref(null);
 
+                // 音效
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 const playSfx = (freq, type = 'sine', duration = 0.1) => {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.type = type;
-                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-                    gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-                    osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.start(); osc.stop(audioCtx.currentTime + duration);
+                    try {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = type;
+                        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                        gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                        osc.connect(gain); gain.connect(audioCtx.destination);
+                        osc.start(); osc.stop(audioCtx.currentTime + duration);
+                    } catch(e) {}
                 };
 
                 onMounted(async () => {
@@ -302,7 +322,7 @@
                             uid: myId.value, name: userName.value, avatar: selectedAvatar.value,
                             money: 30000, pos: 0, lands: [], isBot: false, skipTurns: 0
                         }],
-                        logs: ['戰鬥開始！']
+                        logs: ['戰鬥正式開始！']
                     });
                     joinRoom(rid);
                 };
@@ -328,10 +348,23 @@
                         });
                 };
 
+                // 電腦自動擲骰子邏輯
+                watch(() => currentRoom.value?.turn, (newTurn) => {
+                    if (currentRoom.value?.status === 'playing' && !winner.value) {
+                        const currentPlayer = currentRoom.value.players[newTurn];
+                        if (currentPlayer.isBot && !rolling.value && !isMoving.value) {
+                            setTimeout(() => {
+                                rollDiceAction();
+                            }, 1500); // 思考 1.5 秒後自動擲骰
+                        }
+                    }
+                });
+
                 const addBot = async () => {
+                    const randomName = BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)];
                     const bot = {
                         uid: 'bot_' + Math.random(),
-                        name: 'AI 對手',
+                        name: randomName,
                         avatar: AVATARS[Math.floor(Math.random() * AVATARS.length)],
                         money: 30000, pos: 0, lands: [], isBot: true, skipTurns: 0
                     };
@@ -352,7 +385,7 @@
                         dice.value = Math.floor(Math.random() * 6) + 1;
                         rolling.value = false;
                         movePlayer(dice.value);
-                    }, 1000);
+                    }, 800);
                 };
 
                 const movePlayer = async (steps) => {
@@ -367,9 +400,9 @@
                         playSfx(523 + i * 40);
                         if (p.pos === 0) {
                             p.money += 2000;
-                            showMoneyEffect("+2000");
+                            showMoneyEffect("+2000", p.uid);
                         }
-                        await new Promise(r => setTimeout(r, 400));
+                        await new Promise(r => setTimeout(r, 350));
                         jumpStates.value[p.uid] = false;
                     }
                     handleTile(p, players);
@@ -381,11 +414,12 @@
 
                     if (tile.price && !owner) {
                         if (p.isBot) {
-                            if (p.money > tile.price + 5000) {
+                            // AI 買地邏輯：錢夠多就買
+                            if (p.money > tile.price + 3000) {
                                 p.money -= tile.price;
                                 p.lands.push({ id: tile.id, lvl: 0 });
-                                finishTurn(players, [`🏠 AI 買下了 ${tile.name}`]);
-                            } else finishTurn(players);
+                                finishTurn(players, [`🏠 ${p.name} 豪擲 ${tile.price} 買下 ${tile.name}`]);
+                            } else finishTurn(players, [`🤔 ${p.name} 覺得 ${tile.name} 太貴了`]);
                         } else {
                             modal.value = { type: 'buy', tile, cost: tile.price, players };
                         }
@@ -394,8 +428,8 @@
                         const rent = Math.floor(tile.price * (0.2 + land.lvl * 0.4));
                         p.money -= rent;
                         owner.money += rent;
-                        showMoneyEffect("-" + rent);
-                        finishTurn(players, [`💸 ${p.name} 付租金給 ${owner.name}`]);
+                        showMoneyEffect("-" + rent, p.uid);
+                        finishTurn(players, [`💸 ${p.name} 在 ${owner.name} 的地盤繳了 ${rent}`]);
                     } else finishTurn(players);
                 };
 
@@ -405,7 +439,7 @@
                     if (confirm && p.money >= cost) {
                         p.money -= cost;
                         p.lands.push({ id: tile.id, lvl: 0 });
-                        finishTurn(players, [`✨ ${p.name} 買下地產`]);
+                        finishTurn(players, [`✨ ${p.name} 成功入主 ${tile.name}`]);
                     } else finishTurn(players);
                     modal.value = null;
                 };
@@ -419,7 +453,7 @@
                     });
                 };
 
-                const showMoneyEffect = (amount) => {
+                const showMoneyEffect = (amount, uid) => {
                     const id = Date.now();
                     moneyParticles.value.push({ id, amount, x: 50, y: 50 });
                     setTimeout(() => { moneyParticles.value = moneyParticles.value.filter(m => m.id !== id); }, 1200);
@@ -428,12 +462,16 @@
                 return {
                     view, userName, selectedAvatar, rooms, currentRoom, currentRoomId,
                     dice, rolling, visualPositions, jumpStates, moneyParticles, modal, eventToast, winner,
-                    AVATARS, BOARD, myId,
+                    AVATARS, BOARD, myId, isMoving,
                     getGridStyle: (i) => {
                         if (i <= 10) return { gridRow: 9, gridColumn: 11 - i };
                         if (i <= 17) return { gridRow: 9 - (i - 10), gridColumn: 1 };
                         if (i <= 28) return { gridRow: 1, gridColumn: i - 17 };
                         return { gridRow: i - 27, gridColumn: 11 };
+                    },
+                    getTileBg: (i) => {
+                        const owner = currentRoom.value?.players.find(p => p.lands.some(l => l.id === i));
+                        return owner ? { backgroundColor: owner.avatar.color + 'CC' } : {}; // CC 為透明度
                     },
                     getPlayersAt: (i) => currentRoom.value?.players.filter(p => visualPositions.value[p.uid] === i && p.money >= 0) || [],
                     getOwner: (i) => currentRoom.value?.players.find(p => p.lands.some(l => l.id === i)),
@@ -443,7 +481,7 @@
                     },
                     roomLogs: computed(() => [...(currentRoom.value?.logs || [])].reverse()),
                     isHost: computed(() => currentRoom.value?.host === myId.value),
-                    canRoll: computed(() => !rolling.value && !isMoving.value && currentRoom.value?.status === 'playing' && currentRoom.value.players[currentRoom.value.turn].uid === myId.value),
+                    isMyTurn: computed(() => currentRoom.value?.status === 'playing' && currentRoom.value.players[currentRoom.value.turn].uid === myId.value),
                     enterLobby, createRoom, joinRoom, addBot, startGame, rollDiceAction, handleAction
                 };
             }
