@@ -9,439 +9,452 @@
 <html lang="zh-TW">\
 <head>\
     <meta charset="UTF-8">\
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">\
-    <title>\uc0\u21488 \u28771 \u22823 \u23500 \u32705  - \u24179 \u34913 \u22320 \u22294 \u29256 </title>\
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">\
+    <title>\uc0\u21488 \u28771 \u22823 \u23500 \u32705  - \u26480 \u21733 \u23560 \u23660 \u29256 </title>\
     <script src="https://cdn.tailwindcss.com"></script>\
-    <script type="module">\
-        import \{ initializeApp \} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";\
-        import \{ getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken \} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";\
-        import \{ getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc, arrayUnion, collection \} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";\
-\
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'taiwan-monopoly-v7-map';\
-        const firebaseConfig = JSON.parse(__firebase_config);\
-        const app = initializeApp(firebaseConfig);\
-        const auth = getAuth(app);\
-        const db = getFirestore(app);\
-\
-        const AVATARS = [\
-            \{ id: 'ceo', emoji: '\uc0\u55357 \u56424 \u8205 \u55357 \u56508 ', color: '#0ea5e9' \},\
-            \{ id: 'dog', emoji: '\uc0\u55357 \u56374 ', color: '#8b5cf6' \},\
-            \{ id: 'cat', emoji: '\uc0\u55357 \u56369 ', color: '#f59e0b' \},\
-            \{ id: 'ninja', emoji: '\uc0\u55358 \u56695 ', color: '#1f2937' \},\
-            \{ id: 'chef', emoji: '\uc0\u55357 \u56424 \u8205 \u55356 \u57203 ', color: '#ef4444' \},\
-            \{ id: 'pilot', emoji: '\uc0\u55357 \u56424 \u8205 \u9992 \u65039 ', color: '#6366f1' \},\
-            \{ id: 'alien', emoji: '\uc0\u55357 \u56445 ', color: '#10b981' \},\
-            \{ id: 'robot', emoji: '\uc0\u55358 \u56598 ', color: '#64748b' \},\
-            \{ id: 'rabbit', emoji: '\uc0\u55357 \u56368 ', color: '#ec4899' \},\
-            \{ id: 'bear', emoji: '\uc0\u55357 \u56379 ', color: '#92400e' \},\
-            \{ id: 'ghost', emoji: '\uc0\u55357 \u56443 ', color: '#94a3b8' \},\
-            \{ id: 'cowboy', emoji: '\uc0\u55358 \u56608 ', color: '#b45309' \}\
-        ];\
-\
-        // \uc0\u37325 \u26032 \u32232 \u25490 \u30340 \u22320 \u22294 \u65292 \u30906 \u20445 \u29305 \u27530 \u26684 \u19981 \u36899 \u32396 \
-        const TILES = [\
-            \{ id: 0, name: "\uc0\u36215 \u40670 ", type: "GO", icon: "\u55357 \u57001 ", grid: "9/11" \},\
-            \{ id: 1, name: "\uc0\u22522 \u38534 ", price: 1200, rent: 150, icon: "\u55357 \u56994 ", grid: "9/10" \},\
-            \{ id: 2, name: "\uc0\u21488 \u21271 ", price: 6000, rent: 800, icon: "\u55356 \u57305 \u65039 ", grid: "9/9" \},\
-            \{ id: 3, name: "\uc0\u21629 \u36939 ", type: "FATE", icon: "\u10067 ", grid: "9/8" \},\
-            \{ id: 4, name: "\uc0\u26032 \u21271 ", price: 2400, rent: 300, icon: "\u55356 \u57097 ", grid: "9/7" \},\
-            \{ id: 5, name: "\uc0\u26691 \u22290 ", price: 2200, rent: 250, icon: "\u9992 \u65039 ", grid: "9/6" \},\
-            \{ id: 6, name: "\uc0\u39640 \u37941 ", price: 4000, rent: 500, icon: "\u55357 \u56964 ", grid: "9/5" \},\
-            \{ id: 7, name: "\uc0\u26032 \u31481 ", price: 2000, rent: 220, icon: "\u55357 \u56620 ", grid: "9/4" \},\
-            \{ id: 8, name: "\uc0\u33495 \u26647 ", price: 1800, rent: 200, icon: "\u55356 \u57171 ", grid: "9/3" \},\
-            \{ id: 9, name: "\uc0\u27231 \u36935 ", type: "CHANCE", icon: "\u10024 ", grid: "9/2" \},\
-            \{ id: 10, name: "\uc0\u30475 \u23432 \u25152 ", type: "JAIL", icon: "\u9939 \u65039 ", grid: "9/1" \},\
-            \{ id: 11, name: "\uc0\u21488 \u20013 ", price: 3500, rent: 450, icon: "\u55358 \u56679 ", grid: "8/1" \},\
-            \{ id: 12, name: "\uc0\u24432 \u21270 ", price: 2000, rent: 220, icon: "\u9961 \u65039 ", grid: "7/1" \},\
-            \{ id: 13, name: "\uc0\u25152 \u24471 \u31237 ", type: "TAX", icon: "\u55357 \u56504 ", grid: "6/1" \},\
-            \{ id: 14, name: "\uc0\u21335 \u25237 ", price: 1800, rent: 200, icon: "\u55356 \u57138 ", grid: "5/1" \},\
-            \{ id: 15, name: "\uc0\u26085 \u26376 \u28525 ", price: 3200, rent: 450, icon: "\u9973 ", grid: "4/1" \},\
-            \{ id: 16, name: "\uc0\u21629 \u36939 ", type: "FATE", icon: "\u10067 ", grid: "3/1" \},\
-            \{ id: 17, name: "\uc0\u38642 \u26519 ", price: 1600, rent: 180, icon: "\u55358 \u56684 ", grid: "2/1" \},\
-            \{ id: 18, name: "\uc0\u20241 \u24687 \u31449 ", type: "PARK", icon: "\u9749 ", grid: "1/1" \},\
-            \{ id: 19, name: "\uc0\u22025 \u32681 ", price: 1800, rent: 200, icon: "\u55357 \u56340 ", grid: "1/2" \},\
-            \{ id: 20, name: "\uc0\u21488 \u21335 ", price: 3000, rent: 400, icon: "\u55356 \u57327 ", grid: "1/3" \},\
-            \{ id: 21, name: "\uc0\u21488 \u37941 ", price: 3000, rent: 350, icon: "\u55357 \u56966 ", grid: "1/4" \},\
-            \{ id: 22, name: "\uc0\u39640 \u38596 ", price: 4000, rent: 550, icon: "\u9875 ", grid: "1/5" \},\
-            \{ id: 23, name: "\uc0\u23631 \u26481 ", price: 1600, rent: 180, icon: "\u55356 \u57165 ", grid: "1/6" \},\
-            \{ id: 24, name: "\uc0\u27231 \u36935 ", type: "CHANCE", icon: "\u10024 ", grid: "1/7" \},\
-            \{ id: 25, name: "\uc0\u22718 \u19969 ", price: 2200, rent: 250, icon: "\u55356 \u57302 \u65039 ", grid: "1/8" \},\
-            \{ id: 26, name: "\uc0\u21488 \u26481 ", price: 2000, rent: 220, icon: "\u55356 \u57224 ", grid: "1/9" \},\
-            \{ id: 27, name: "\uc0\u33457 \u34030 ", price: 2200, rent: 250, icon: "\u55356 \u57310 \u65039 ", grid: "1/10" \},\
-            \{ id: 28, name: "\uc0\u30435 \u29508 ", type: "GOJAIL", icon: "\u55357 \u56430 ", grid: "1/11" \},\
-            \{ id: 29, name: "\uc0\u22826 \u39791 \u38307 ", price: 2800, rent: 350, icon: "\u9968 \u65039 ", grid: "2/11" \},\
-            \{ id: 30, name: "\uc0\u28558 \u28246 ", price: 1500, rent: 150, icon: "\u55356 \u57098 ", grid: "3/11" \},\
-            \{ id: 31, name: "\uc0\u21629 \u36939 ", type: "FATE", icon: "\u10067 ", grid: "4/11" \},\
-            \{ id: 32, name: "\uc0\u23452 \u34349 ", price: 2000, rent: 220, icon: "\u55358 \u56738 ", grid: "5/11" \},\
-            \{ id: 33, name: "\uc0\u37329 \u38272 ", price: 1500, rent: 150, icon: "\u55357 \u56618 ", grid: "6/11" \},\
-            \{ id: 34, name: "\uc0\u21488 \u21271 101", price: 9000, rent: 2000, icon: "\u55357 \u56462 ", grid: "7/11" \},\
-            \{ id: 35, name: "\uc0\u32317 \u32113 \u24220 ", price: 10000, rent: 2500, icon: "\u55356 \u57307 \u65039 ", grid: "8/11" \}\
-        ];\
-\
-        let S = \{ roomId: '', myId: '', players: [], turn: 0, owners: Array(36).fill(null), status: 'setup', messages: [], diceValue: 0, lastDiceTime: 0 \};\
-        let visualPositions = \{\};\
-        let myAvatarId = 'ceo';\
-        let unsubscribeRoom = null;\
-\
-        window.initGame = async () => \{\
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) \{\
-                await signInWithCustomToken(auth, __initial_auth_token);\
-            \} else \{\
-                await signInAnonymously(auth);\
-            \}\
-            onAuthStateChanged(auth, (u) => \{ if (u) \{ S.myId = u.uid; listenToRooms(); \} \});\
-            renderAvatarOptions();\
-        \};\
-\
-        window.setAvatar = (id) => \{ myAvatarId = id; renderAvatarOptions(); \};\
-\
-        const renderAvatarOptions = () => \{\
-            const container = document.getElementById('avatar-selector');\
-            if(!container) return;\
-            container.innerHTML = AVATARS.map(a => `\
-                <div onclick="window.setAvatar('$\{a.id\}')" class="flex flex-col items-center cursor-pointer transition transform hover:scale-110">\
-                    <div class="text-4xl p-3 rounded-2xl border-4 $\{myAvatarId === a.id ? 'border-sky-500 bg-sky-50 shadow-lg' : 'border-slate-100 bg-white'\}">\
-                        $\{a.emoji\}\
-                    </div>\
-                </div>\
-            `).join('');\
-        \};\
-\
-        window.createRoom = async () => \{\
-            const name = document.getElementById('user-name').value || "\uc0\u26480 \u21733 ";\
-            const code = Math.random().toString(36).substring(2, 6).toUpperCase();\
-            const data = \{\
-                roomId: code, turn: 0, owners: Array(36).fill(null), status: 'waiting', diceValue: 0, lastDiceTime: 0,\
-                players: [\{ uid: S.myId, name, avatarId: myAvatarId, money: 30000, pos: 0 \}],\
-                messages: ["\uc0\u55356 \u57262  \u20882 \u38570 \u38283 \u22987 \u65281 "]\
-            \};\
-            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code), data);\
-            S.roomId = code; listenToRoom();\
-        \};\
-\
-        window.joinRoom = async (code) => \{\
-            const name = document.getElementById('user-name').value || "\uc0\u22823 \u23500 \u32705 ";\
-            const ref = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code);\
-            const snap = await getDoc(ref);\
-            if (!snap.exists()) return;\
-            const players = snap.data().players;\
-            if (!players.find(p => p.uid === S.myId)) \{\
-                await updateDoc(ref, \{ \
-                    players: arrayUnion(\{ uid: S.myId, name, avatarId: myAvatarId, money: 30000, pos: 0 \}),\
-                    messages: arrayUnion(`\uc0\u55357 \u56395  $\{name\} \u21152 \u20837 \u20102 \u36938 \u25138 `)\
-                \});\
-            \}\
-            S.roomId = code; listenToRoom();\
-        \};\
-\
-        const listenToRooms = () => \{\
-            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'rooms'), (snap) => \{\
-                const list = document.getElementById('room-list');\
-                if(!list) return;\
-                list.innerHTML = snap.docs.filter(d => d.data().status === 'waiting').map(d => `\
-                    <div onclick="window.joinRoom('$\{d.id\}')" class="p-4 bg-white border-4 border-slate-100 rounded-3xl mb-3 flex justify-between items-center cursor-pointer hover:bg-sky-50 transition">\
-                        <span class="font-black text-xl">#$\{d.id\}</span>\
-                        <span class="text-sky-500 font-bold">\uc0\u21152 \u20837 \u25151 \u38291 </span>\
-                    </div>\
-                `).join('') || '<p class="text-slate-400 text-center py-4">\uc0\u30446 \u21069 \u27794 \u20154 \u38283 \u25151 ...</p>';\
-            \});\
-        \};\
-\
-        const listenToRoom = () => \{\
-            if (unsubscribeRoom) unsubscribeRoom();\
-            const ref = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', S.roomId);\
-            unsubscribeRoom = onSnapshot(ref, (snap) => \{\
-                if (!snap.exists()) return;\
-                const d = snap.data();\
-                const oldDiceTime = S.lastDiceTime;\
-                S = \{ ...S, ...d \};\
-                S.players.forEach(p => \{ if (visualPositions[p.uid] === undefined) visualPositions[p.uid] = p.pos; \});\
-                if (S.status === 'playing') \{\
-                    showView('game-view');\
-                    if (S.diceValue > 0 && S.lastDiceTime !== oldDiceTime) animateDice(S.diceValue);\
-                \} else \{\
-                    showView('lobby-view');\
-                    document.getElementById('lobby-code').innerText = S.roomId;\
-                    renderLobbyPlayers();\
-                \}\
-                updateUI(); \
-                renderBoard();\
-            \});\
-        \};\
-\
-        const renderLobbyPlayers = () => \{\
-            const list = document.getElementById('lobby-players');\
-            list.innerHTML = S.players.map(p => `\
-                <div class="flex items-center gap-4 bg-slate-50 p-4 rounded-3xl border-2 border-slate-100">\
-                    <span class="text-4xl">$\{AVATARS.find(a=>a.id===p.avatarId).emoji\}</span>\
-                    <span class="font-black text-xl">$\{p.name\}</span>\
-                </div>\
-            `).join('');\
-            const isHost = S.players[0]?.uid === S.myId;\
-            document.getElementById('start-btn').classList.toggle('hidden', !isHost);\
-        \};\
-\
-        const animateDice = (n) => \{\
-            const cube = document.getElementById('dice-cube');\
-            const rots = \{ 1:[0,0], 2:[-90,0], 3:[0,-90], 4:[0,90], 5:[90,0], 6:[180,0] \};\
-            cube.style.transform = `rotateX($\{1080 + rots[n][0]\}deg) rotateY($\{1080 + rots[n][1]\}deg)`;\
-            setTimeout(() => movePlayer(S.turn, n), 1000);\
-        \};\
-\
-        const movePlayer = async (idx, steps) => \{\
-            const p = S.players[idx]; if (!p) return;\
-            for (let i = 0; i < steps; i++) \{\
-                visualPositions[p.uid] = (visualPositions[p.uid] + 1) % 36;\
-                renderBoard(); \
-                await new Promise(r => setTimeout(r, 200));\
-            \}\
-            if (p.uid === S.myId) finalizeTurn(steps);\
-        \};\
-\
-        const finalizeTurn = async (steps) => \{\
-            const p = S.players[S.turn];\
-            let nPos = (p.pos + steps) % 36;\
-            let bonus = (p.pos + steps >= 36) ? 2000 : 0;\
-            const up = [...S.players]; \
-            up[S.turn].pos = nPos; \
-            up[S.turn].money += bonus;\
-            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', S.roomId), \{ players: up \});\
-            processAction(nPos);\
-        \};\
-\
-        window.roll = async () => \{\
-            if (S.players[S.turn]?.uid !== S.myId || S.diceValue > 0) return;\
-            const val = Math.floor(Math.random()*6)+1;\
-            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', S.roomId), \{ \
-                diceValue: val, lastDiceTime: Date.now() \
-            \});\
-        \};\
-\
-        const processAction = async (pos) => \{\
-            const p = S.players[S.turn]; \
-            const t = TILES[pos]; \
-            const ownerIdx = S.owners[pos];\
-            \
-            if (ownerIdx === null && t.price) \{\
-                if (p.money >= t.price) \{\
-                    showModal(t.name, t.price, async () => \{\
-                        const u = [...S.players]; u[S.turn].money -= t.price;\
-                        const o = [...S.owners]; o[pos] = S.turn;\
-                        let msgs = [...(S.messages || []), `\uc0\u55356 \u57304 \u65039  $\{p.name\} \u36023 \u19979 \u20102  $\{t.name\}`].slice(-5);\
-                        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', S.roomId), \{ players: u, owners: o, messages: msgs \}); \
-                        endTurn();\
-                    \});\
-                \} else \{ endTurn(); \}\
-            \} else if (ownerIdx !== null && ownerIdx !== S.turn) \{\
-                const u = [...S.players]; \
-                u[S.turn].money -= t.rent; u[ownerIdx].money += t.rent;\
-                let msgs = [...(S.messages || []), `\uc0\u55357 \u56496  $\{p.name\} \u25903 \u20184  $$\{t.rent\} \u32102  $\{S.players[ownerIdx].name\}`].slice(-5);\
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', S.roomId), \{ players: u, messages: msgs \}); \
-                endTurn();\
-            \} else if (t.type === 'FATE' || t.type === 'CHANCE') \{\
-                const events = [\
-                    \{ t: "\uc0\u21038 \u21038 \u27138 \u20013 \u29518 ", v: 1000 \}, \{ t: "\u20132 \u36890 \u36949 \u35215 \u32624 \u27454 ", v: -500 \}, \
-                    \{ t: "\uc0\u25910 \u21040 \u29983 \u26085 \u32005 \u21253 ", v: 1500 \}, \{ t: "\u25481 \u36914 \u27700 \u28317 ", v: -200 \}\
-                ];\
-                const ev = events[Math.floor(Math.random()*events.length)];\
-                const u = [...S.players]; u[S.turn].money += ev.v;\
-                let msgs = [...(S.messages || []), `\uc0\u55356 \u57266  $\{p.name\}: $\{ev.t\} ($\{ev.v > 0 ? '+' : ''\}$\{ev.v\})`].slice(-5);\
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', S.roomId), \{ players: u, messages: msgs \});\
-                endTurn();\
-            \} else \{ endTurn(); \}\
-        \};\
-\
-        const endTurn = async () => \{\
-            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', S.roomId), \{ \
-                turn: (S.turn + 1) % S.players.length, diceValue: 0 \
-            \});\
-        \};\
-\
-        const updateUI = () => \{\
-            const p = S.players[S.turn]; if(!p) return;\
-            document.getElementById('player-info').innerHTML = S.players.map((pl,i) => `\
-                <div class="p-3 rounded-2xl flex items-center gap-3 border-4 $\{S.turn===i?'bg-sky-500 border-sky-300 text-white shadow-xl scale-105':'bg-white border-slate-100 text-slate-400'\} transition-all">\
-                    <span class="text-3xl">$\{AVATARS.find(a=>a.id===pl.avatarId).emoji\}</span>\
-                    <div class="flex flex-col min-w-[70px]">\
-                        <span class="text-[10px] font-black truncate">$\{pl.name\}</span>\
-                        <span class="text-lg font-black">$$\{pl.money\}</span>\
-                    </div>\
-                </div>\
-            `).join('');\
-            document.getElementById('ticker').innerHTML = (S.messages || []).map(m => `\
-                <div class="bg-white border-l-4 border-sky-500 px-3 py-2 mb-1 text-[11px] font-bold shadow-sm rounded-r-xl animate-fade-in">$\{m\}</div>\
-            `).join('');\
-            document.getElementById('turn-hint').innerText = p.uid === S.myId ? "\uc0\u36650 \u21040 \u20320 \u20102 \u65281 " : `$\{p.name\} \u34892 \u21205 \u20013 `;\
-        \};\
-\
-        const renderBoard = () => \{\
-            const board = document.getElementById('board');\
-            const layer = document.getElementById('tokens-layer');\
-            if(!board || !layer) return;\
-            const rect = board.getBoundingClientRect();\
-            layer.innerHTML = '';\
-            TILES.forEach((t, i) => \{\
-                const el = document.getElementById(`tile-$\{t.id\}`);\
-                if(!el) return;\
-                const ownerIdx = S.owners[i];\
-                if(ownerIdx !== null) \{\
-                    el.style.border = `4px solid $\{AVATARS.find(a=>a.id===S.players[ownerIdx].avatarId).color\}`;\
-                    el.style.background = `$\{AVATARS.find(a=>a.id===S.players[ownerIdx].avatarId).color\}15`;\
-                \} else \{\
-                    el.style.border = `1px solid #f1f5f9`;\
-                    el.style.background = `white`;\
-                \}\
-            \});\
-            S.players.forEach((p, i) => \{\
-                const vPos = visualPositions[p.uid] !== undefined ? visualPositions[p.uid] : p.pos;\
-                const tile = document.getElementById(`tile-$\{vPos\}`);\
-                if(!tile) return;\
-                const tr = tile.getBoundingClientRect();\
-                const token = document.createElement('div');\
-                token.className = 'absolute z-50 w-8 h-8 rounded-full border-2 border-white shadow-md flex items-center justify-center text-xl transition-all duration-300';\
-                token.style.backgroundColor = AVATARS.find(a=>a.id===p.avatarId).color;\
-                token.style.left = `$\{(tr.left - rect.left) + tr.width/2 - 16 + (i*3)\}px`;\
-                token.style.top = `$\{(tr.top - rect.top) + tr.height/2 - 16 + (i*3)\}px`;\
-                token.innerText = AVATARS.find(a=>a.id===p.avatarId).emoji;\
-                layer.appendChild(token);\
-            \});\
-        \};\
-\
-        function showView(id) \{\
-            ['setup-view', 'lobby-view', 'game-view'].forEach(v => document.getElementById(v).classList.add('hidden'));\
-            document.getElementById(id).classList.remove('hidden');\
-        \}\
-\
-        function showModal(n, p, cb) \{\
-            const m = document.getElementById('modal');\
-            document.getElementById('modal-t').innerText = n;\
-            document.getElementById('modal-v').innerText = `$$\{p\}`;\
-            m.classList.remove('hidden');\
-            document.getElementById('btn-y').onclick = () => \{ m.classList.add('hidden'); cb(); \};\
-            document.getElementById('btn-n').onclick = () => \{ m.classList.add('hidden'); endTurn(); \};\
-        \}\
-\
-        window.onload = () => \{\
-            window.initGame();\
-            const b = document.getElementById('board');\
-            TILES.forEach(t => \{\
-                const el = document.createElement('div'); el.id = `tile-$\{t.id\}`;\
-                el.className = 'tile-item'; el.style.gridArea = t.grid;\
-                el.innerHTML = `\
-                    <div class="tile-icon">$\{t.icon || ''\}</div>\
-                    <div class="tile-name">$\{t.name\}</div>\
-                    $\{t.price ? `<div class="tile-price">$$\{t.price\}</div>` : ''\}\
-                `;\
-                b.appendChild(el);\
-            \});\
-        \};\
-\
-        window.startGameAction = async () => \{\
-            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', S.roomId), \{ status: 'playing' \});\
-        \};\
-    </script>\
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>\
+    <!-- Firebase SDKs -->\
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>\
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>\
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>\
     <style>\
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@900&display=swap');\
-        body \{ margin:0; font-family:'Noto Sans TC', sans-serif; background:#f8fafc; height:100vh; overflow:hidden; \}\
-        \
-        #board \{ \
-            display: grid; \
-            grid-template-columns: 1.2fr repeat(9, 1fr) 1.2fr; \
-            grid-template-rows: 1.2fr repeat(7, 1fr) 1.2fr; \
-            width: 100vw; height: 100vh; position: relative; gap: 2px; background: #e2e8f0;\
-        \}\
-\
-        .tile-item \{\
-            background: white; display: flex; flex-direction: column; align-items: center; justify-content: center;\
-            padding: 4px; overflow: hidden;\
-        \}\
-\
-        .tile-name \{\
-            font-size: clamp(0.65rem, 1.3vw, 1.1rem); font-weight: 900; line-height: 1.1;\
-            max-width: 90%; text-align: center; word-break: break-all; color: #1e293b;\
-        \}\
-\
-        .tile-icon \{ font-size: clamp(1.1rem, 2.8vw, 2.2rem); margin-bottom: 2px; \}\
-        .tile-price \{ font-size: clamp(0.6rem, 1vw, 0.85rem); color: #0ea5e9; font-weight: 800; \}\
-\
-        #inner-ui \{ \
-            grid-area: 2 / 2 / 9 / 11; background: #ffffffcc; border-radius: 50px; margin: 10px; \
-            display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; z-index: 10;\
-            backdrop-filter: blur(10px); box-shadow: inset 0 0 50px rgba(0,0,0,0.03);\
-        \}\
-\
-        #inner-ui::after \{\
-            content: "TAIWAN"; position: absolute; font-size: 15vw; color: #f1f5f9; font-weight: 900; z-index: -1; transform: rotate(-5deg); opacity: 0.6;\
-        \}\
-\
-        #ticker \{ position: absolute; top: 15px; right: 15px; width: 180px; z-index: 20; \}\
-        #player-info \{ position: absolute; top: 15px; left: 15px; display: flex; flex-direction: column; gap: 8px; z-index: 20; \}\
-        \
-        .dice-box \{ perspective: 1000px; width: 90px; height: 90px; cursor: pointer; \}\
-        .cube \{ width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.8s cubic-bezier(0.17, 0.67, 0.83, 0.67); \}\
-        .face \{ position: absolute; width: 90px; height: 90px; background: white; border: 4px solid #f1f5f9; border-radius: 18px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 20px rgba(0,0,0,0.05); \}\
-        .dot \{ width: 14px; height: 14px; background: #0ea5e9; border-radius: 50%; position: absolute; \}\
-        .f1 .dot \{ width:22px; height:22px; background: #ef4444; \}\
-        .f2 .dot:nth-child(1) \{ top:15px; left:15px; \} .f2 .dot:nth-child(2) \{ bottom:15px; right:15px; \}\
-        .f3 .dot:nth-child(1) \{ top:12px; left:12px; \} .f3 .dot:nth-child(2) \{ top:38px; left:38px; \} .f3 .dot:nth-child(3) \{ bottom:12px; right:12px; \}\
-        .f4 .dot:nth-child(1) \{ top:15px; left:15px; \} .f4 .dot:nth-child(2) \{ top:15px; right:15px; \} .f4 .dot:nth-child(3) \{ bottom:15px; left:15px; \} .f4 .dot:nth-child(4) \{ bottom:15px; right:15px; \}\
-        .f5 .dot:nth-child(1) \{ top:15px; left:15px; \} .f5 .dot:nth-child(2) \{ top:15px; right:15px; \} .f5 .dot:nth-child(3) \{ top:38px; left:38px; \} .f5 .dot:nth-child(4) \{ bottom:15px; left:15px; \} .f5 .dot:nth-child(5) \{ bottom:15px; right:15px; \}\
-        .f6 .dot:nth-child(1) \{ top:15px; left:25px; \} .f6 .dot:nth-child(2) \{ top:38px; left:25px; \} .f6 .dot:nth-child(3) \{ bottom:15px; left:25px; \} .f6 .dot:nth-child(4) \{ top:15px; right:25px; \} .f6 .dot:nth-child(5) \{ top:38px; right:25px; \} .f6 .dot:nth-child(6) \{ bottom:15px; right:25px; \}\
-\
-        .f1 \{ transform: rotateY(0deg) translateZ(45px); \} .f2 \{ transform: rotateX(90deg) translateZ(45px); \}\
-        .f3 \{ transform: rotateY(90deg) translateZ(45px); \} .f4 \{ transform: rotateY(-90deg) translateZ(45px); \}\
-        .f5 \{ transform: rotateX(-90deg) translateZ(45px); \} .f6 \{ transform: rotateY(180deg) translateZ(45px); \}\
-\
-        @keyframes fade-in \{ from \{ opacity:0; transform:translateY(5px); \} to \{ opacity:1; transform:translateY(0); \} \}\
-        .animate-fade-in \{ animation: fade-in 0.3s ease-out forwards; \}\
+        @keyframes rotateDice \{ 0% \{ transform: rotateX(0deg) rotateY(0deg); \} 100% \{ transform: rotateX(360deg) rotateY(360deg); \} \}\
+        @keyframes popIn \{ 0% \{ transform: scale(0.8); opacity: 0; \} 100% \{ transform: scale(1); opacity: 1; \} \}\
+        @keyframes jump \{ 0% \{ transform: translateY(0) scale(1); \} 50% \{ transform: translateY(-25px) scale(1.1); \} 100% \{ transform: translateY(0) scale(1); \} \}\
+        @keyframes moneyFloat \{ 0% \{ transform: translateY(0); opacity: 1; \} 100% \{ transform: translateY(-80px); opacity: 0; \} \}\
+        [v-cloak] \{ display: none; \}\
+        .animate-popIn \{ animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; \}\
+        .jump-animation \{ animation: jump 0.45s ease-in-out; \}\
+        .money-particle \{ position: absolute; font-weight: 900; font-size: 1.8rem; pointer-events: none; z-index: 1000; text-shadow: 0 0 8px rgba(0,0,0,0.3); animation: moneyFloat 1.2s ease-out forwards; \}\
+        .dice-container \{ width: 120px; height: 120px; perspective: 1000px; \}\
+        .dice \{ width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 1s cubic-bezier(0.15, 0.85, 0.35, 1.2); \}\
+        .dice.rolling \{ animation: rotateDice 0.5s infinite linear; \}\
+        .face \{ position: absolute; width: 120px; height: 120px; background: white; border: 2px solid #e2e8f0; border-radius: 24px; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 15px rgba(0,0,0,0.05); \}\
+        .front  \{ transform: rotateY(0deg) translateZ(60px); \}\
+        .back   \{ transform: rotateY(180deg) translateZ(60px); \}\
+        .right  \{ transform: rotateY(90deg) translateZ(60px); \}\
+        .left   \{ transform: rotateY(-90deg) translateZ(60px); \}\
+        .top    \{ transform: rotateX(90deg) translateZ(60px); \}\
+        .bottom \{ transform: rotateX(-90deg) translateZ(60px); \}\
+        .show-1 \{ transform: rotateX(0deg) rotateY(0deg); \}\
+        .show-6 \{ transform: rotateX(0deg) rotateY(180deg); \}\
+        .show-3 \{ transform: rotateX(0deg) rotateY(-90deg); \}\
+        .show-4 \{ transform: rotateX(0deg) rotateY(90deg); \}\
+        .show-2 \{ transform: rotateX(-90deg) rotateY(0deg); \}\
+        .show-5 \{ transform: rotateX(90deg) rotateY(0deg); \}\
+        .dot \{ border-radius: 50%; \}\
+        .dot-red \{ background-color: #ef4444; \}\
+        .dot-black \{ background-color: #1e293b; \}\
     </style>\
 </head>\
-<body>\
-    <div id="setup-view" class="fixed inset-0 z-[1000] bg-white flex flex-col items-center justify-center p-6">\
-        <h1 class="text-6xl font-black text-slate-900 mb-6 italic tracking-tighter">\uc0\u22823 \u23500 \u32705 \u65306 \u21488 \u28771 </h1>\
-        <div id="avatar-selector" class="grid grid-cols-4 gap-4 mb-8"></div>\
-        <input type="text" id="user-name" placeholder="\uc0\u36664 \u20837 \u29609 \u23478 \u21517 \u31281 " class="w-full max-w-sm bg-slate-50 p-5 rounded-3xl border-4 border-slate-100 text-center text-2xl font-black mb-6 outline-none focus:border-sky-500">\
-        <button onclick="createRoom()" class="w-full max-w-sm bg-slate-900 text-white py-5 rounded-3xl text-2xl font-black hover:bg-sky-600 transition shadow-xl">\uc0\u21109 \u24314 \u25151 \u38291 </button>\
-        <div class="mt-8 w-full max-w-sm"><div id="room-list"></div></div>\
-    </div>\
-\
-    <div id="lobby-view" class="fixed inset-0 z-[1100] bg-slate-900/50 backdrop-blur-md hidden flex items-center justify-center p-6">\
-        <div class="bg-white p-10 rounded-[50px] text-center shadow-2xl w-full max-w-md">\
-            <h2 id="lobby-code" class="text-6xl font-black text-sky-500 mb-8 italic">----</h2>\
-            <div id="lobby-players" class="space-y-3 mb-8"></div>\
-            <button id="start-btn" onclick="window.startGameAction()" class="w-full bg-sky-500 text-white py-6 rounded-3xl text-2xl font-black shadow-lg">\uc0\u38283 \u22987 \u36938 \u25138 </button>\
+<body class="bg-slate-200 overflow-hidden font-sans">\
+    <div id="app" v-cloak>\
+        <!-- \uc0\u30331 \u20837 \u30059 \u38754  -->\
+        <div v-if="view === 'login'" class="h-screen flex items-center justify-center p-4">\
+            <div class="bg-white p-10 rounded-[40px] shadow-2xl text-center max-w-md w-full animate-popIn">\
+                <h1 class="text-4xl font-black mb-8 text-slate-800 italic tracking-tighter uppercase">Taiwan Monopoly</h1>\
+                <div class="grid grid-cols-4 gap-2 mb-8 bg-slate-50 p-4 rounded-3xl">\
+                    <button v-for="av in AVATARS" :key="av.id" @click="selectedAvatar = av" \
+                        :class="['text-3xl p-2 rounded-xl border-4 transition-all', selectedAvatar.id === av.id ? 'border-rose-400 scale-110 bg-white' : 'border-transparent']">\
+                        \{\{ av.emoji \}\}\
+                    </button>\
+                </div>\
+                <input v-model="userName" class="w-full bg-slate-100 p-4 rounded-2xl text-center font-bold mb-6 text-xl" placeholder="\uc0\u36664 \u20837 \u21517 \u31281 " />\
+                <button @click="enterLobby" class="w-full bg-rose-400 text-white py-4 rounded-2xl font-black text-xl hover:bg-rose-500 shadow-lg">\uc0\u36914 \u20837 \u22823 \u24307 </button>\
+            </div>\
         </div>\
-    </div>\
 \
-    <div id="game-view" class="hidden">\
-        <div id="board">\
-            <div id="tokens-layer" class="absolute inset-0 pointer-events-none"></div>\
-            <div id="inner-ui">\
-                <div id="player-info"></div>\
-                <div id="ticker"></div>\
-                <div onclick="window.roll()" class="dice-box"><div id="dice-cube" class="cube">\
-                    <div class="face f1"><div class="dot"></div></div>\
-                    <div class="face f2"><div class="dot"></div><div class="dot"></div></div>\
-                    <div class="face f3"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>\
-                    <div class="face f4"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>\
-                    <div class="face f5"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>\
-                    <div class="face f6"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>\
-                </div></div>\
-                <div id="turn-hint" class="mt-6 text-xl font-black text-sky-600 bg-white px-8 py-3 rounded-full border-2 border-sky-100 shadow-sm">\uc0\u28310 \u20633 \u20013 ...</div>\
+        <!-- \uc0\u22823 \u24307 \u30059 \u38754  -->\
+        <div v-else-if="view === 'lobby'" class="h-screen p-6 flex flex-col items-center overflow-auto">\
+            <div class="max-w-2xl w-full flex justify-between items-center bg-white p-6 rounded-3xl shadow-sm mb-6">\
+                <h2 class="text-2xl font-black text-slate-800">\uc0\u36938 \u25138 \u22823 \u24307 </h2>\
+                <button @click="createRoom" class="bg-rose-400 text-white px-8 py-3 rounded-xl font-bold">\uc0\u21109 \u24314 \u25151 \u38291 </button>\
+            </div>\
+            <div class="grid grid-cols-1 gap-4 w-full max-w-2xl">\
+                <div v-if="rooms.length === 0" class="text-center py-10 text-slate-400 font-bold">\uc0\u30446 \u21069 \u27794 \u26377 \u25136 \u23616 </div>\
+                <div v-for="r in rooms" :key="r.id" @click="joinRoom(r.id)" class="bg-white p-6 rounded-3xl shadow-sm flex justify-between items-center cursor-pointer hover:border-rose-300 border border-transparent transition-all">\
+                    <div class="font-bold text-xl">\{\{ r.name \}\}</div>\
+                    <div class="bg-slate-100 px-4 py-2 rounded-lg text-slate-500 font-bold">\uc0\u36914 \u20837 \u25151 \u38291 </div>\
+                </div>\
+            </div>\
+        </div>\
+\
+        <!-- \uc0\u31561 \u24453 \u30059 \u38754  -->\
+        <div v-else-if="view === 'waiting'" class="h-screen flex flex-col items-center justify-center p-6">\
+            <div class="bg-white p-10 rounded-[40px] shadow-xl w-full max-w-md text-center">\
+                <h2 class="text-2xl font-black mb-6">\uc0\u31561 \u24453 \u38283 \u25136 ...</h2>\
+                <div class="grid grid-cols-2 gap-4 mb-6">\
+                    <div v-for="p in currentRoom?.players" :key="p.uid" class="bg-slate-50 p-4 rounded-3xl flex flex-col items-center border-2 border-white shadow-sm">\
+                        <div class="text-4xl mb-2">\{\{ p.avatar.emoji \}\}</div>\
+                        <div class="font-bold">\{\{ p.name \}\}</div>\
+                    </div>\
+                    <button v-if="currentRoom?.players.length < 4 && isHost" @click="addBot" class="border-2 border-dashed border-slate-200 rounded-3xl flex items-center justify-center p-4 text-slate-300 font-bold">+ \uc0\u21152 \u20837  AI</button>\
+                </div>\
+                <div class="flex gap-4">\
+                    <button @click="view = 'lobby'" class="flex-1 bg-slate-100 text-slate-400 py-4 rounded-2xl font-black">\uc0\u36820 \u22238 </button>\
+                    <button v-if="isHost" @click="startGame" class="flex-[2] bg-rose-400 text-white py-4 rounded-2xl font-black shadow-lg">\uc0\u38283 \u22987 \u36938 \u25138 </button>\
+                </div>\
+            </div>\
+        </div>\
+\
+        <!-- \uc0\u36938 \u25138 \u30059 \u38754  -->\
+        <div v-else-if="view === 'game'" class="h-screen flex items-center justify-center p-2 relative overflow-hidden">\
+            <div v-if="eventToast" class="absolute top-10 left-1/2 -translate-x-1/2 z-[300] bg-rose-500 text-white px-10 py-4 rounded-full shadow-2xl border-4 border-white font-black animate-bounce">\{\{ eventToast \}\}</div>\
+            \
+            <!-- \uc0\u37329 \u37666 \u28418 \u28014 \u29305 \u25928  -->\
+            <div v-for="p in moneyParticles" :key="p.id" class="money-particle" :style="\{ left: p.x+'%', top: p.y+'%', color: p.amount.toString().startsWith('-') ? '#FF6B6B' : '#ffd700' \}">\
+                \{\{ p.amount \}\}\
+            </div>\
+\
+            <!-- \uc0\u21213 \u21033 \u30059 \u38754  -->\
+            <div v-if="winner" class="absolute inset-0 z-[600] bg-black/80 flex flex-col items-center justify-center text-white p-10 animate-popIn">\
+                <div class="text-9xl mb-4 animate-bounce">\uc0\u55356 \u57286 </div>\
+                <h1 class="text-6xl font-black mb-2">\{\{ winner.name \}\}</h1>\
+                <p class="text-2xl font-bold text-rose-400 mb-8">\uc0\u32113 \u27835 \u20102 \u21488 \u28771 \u25151 \u22320 \u29986 \u65281 </p>\
+                <button @click="location.reload()" class="bg-rose-400 px-10 py-4 rounded-2xl font-black text-2xl">\uc0\u20877 \u29609 \u19968 \u23616 </button>\
+            </div>\
+\
+            <!-- \uc0\u22320 \u22294 \u26827 \u30436  -->\
+            <div class="bg-white rounded-[40px] shadow-2xl w-full h-full max-w-[1200px] max-h-[900px] grid grid-cols-11 grid-rows-9 p-2 gap-1 relative border-4 border-white">\
+                <div v-for="(tile, i) in BOARD" :key="i" :style="getGridStyle(i)" class="relative border border-slate-100 flex flex-col items-center justify-center rounded-xl overflow-hidden shadow-sm p-1 bg-white">\
+                    <div v-if="getOwner(i)" class="absolute bottom-0 inset-x-0 h-1" :style="\{backgroundColor: getOwner(i).avatar.color\}"></div>\
+                    <div v-if="getLandLvl(i) > 0" class="absolute top-1 right-1 text-[10px] bg-white rounded px-1 font-bold shadow-sm">\{\{ ['\uc0\u55356 \u57312 ','\u55356 \u57304 \u65039 ','\u55356 \u57320 '][getLandLvl(i)-1] \}\}</div>\
+                    \
+                    <div class="flex flex-col items-center justify-between w-full h-full py-1">\
+                        <div class="text-[10px] md:text-[11px] font-black text-slate-800 text-center leading-tight">\{\{ tile.name \}\}</div>\
+                        <div class="text-xl md:text-2xl my-0.5">\{\{ tile.icon \}\}</div>\
+                        <div class="h-[12px]"><div v-if="tile.price" class="text-[10px] font-black text-rose-500">$\{\{ tile.price \}\}</div></div>\
+                    </div>\
+\
+                    <!-- \uc0\u29609 \u23478 \u26827 \u23376  -->\
+                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-20 flex-wrap gap-0.5">\
+                        <div v-for="p in getPlayersAt(i)" :key="p.uid" :class="['w-7 h-7 md:w-9 md:h-9 rounded-full border-2 border-white flex items-center justify-center text-lg shadow-md transition-all duration-300', jumpStates[p.uid] ? 'jump-animation' : '']" :style="\{backgroundColor: p.avatar.color\}">\
+                            \{\{ p.avatar.emoji \}\}\
+                        </div>\
+                    </div>\
+                </div>\
+\
+                <!-- \uc0\u20013 \u24515 \u21312 \u22495  -->\
+                <div class="col-start-2 col-end-11 row-start-2 row-end-9 bg-slate-50/50 rounded-3xl m-1 relative flex items-center justify-center">\
+                    <!-- \uc0\u29609 \u23478 \u36039 \u35338  -->\
+                    <div class="absolute top-6 left-6 space-y-2">\
+                        <div v-for="(p, idx) in currentRoom?.players" :key="p.uid" :class="['flex items-center gap-3 p-3 rounded-2xl transition-all', p.money < 0 ? 'opacity-40' : currentRoom.turn === idx ? 'bg-white shadow-xl ring-2 ring-rose-400 scale-105' : 'bg-white/40']">\
+                            <div class="text-3xl">\{\{ p.money < 0 ? '\uc0\u55357 \u56448 ' : p.avatar.emoji \}\}</div>\
+                            <div>\
+                                <div class="text-[10px] font-black text-slate-500">\{\{ p.name \}\}</div>\
+                                <div class="font-black text-lg text-rose-500">$\{\{ p.money.toLocaleString() \}\}</div>\
+                            </div>\
+                        </div>\
+                    </div>\
+\
+                    <!-- \uc0\u39600 \u23376  -->\
+                    <div class="flex flex-col items-center">\
+                        <div class="dice-container">\
+                            <div :class="['dice', rolling ? 'rolling' : '', 'show-' + dice]">\
+                                <div class="face front"><div class="dot w-8 h-8 dot-red"></div></div>\
+                                <div class="face back"><div class="grid grid-cols-2 gap-4"><div v-for="n in 6" class="dot w-4 h-4 dot-black"></div></div></div>\
+                                <div class="face right"><div class="grid grid-cols-2 gap-4"><div v-for="n in 3" class="dot w-4 h-4 dot-black"></div></div></div>\
+                                <div class="face left"><div class="grid grid-cols-2 gap-4"><div v-for="n in 4" class="dot w-4 h-4 dot-black"></div></div></div>\
+                                <div class="face top"><div class="grid grid-cols-1 gap-4"><div v-for="n in 2" class="dot w-4 h-4 dot-black"></div></div></div>\
+                                <div class="face bottom"><div class="grid grid-cols-1 gap-4"><div v-for="n in 5" class="dot w-4 h-4 dot-black"></div></div></div>\
+                            </div>\
+                        </div>\
+                        <button v-if="canRoll" @click="rollDiceAction" class="mt-8 bg-rose-400 text-white px-12 py-4 rounded-full font-black text-xl shadow-xl hover:bg-rose-500 transition-all">\uc0\u25842 \u39600 \u23376 </button>\
+                    </div>\
+\
+                    <!-- \uc0\u25136 \u22577  -->\
+                    <div class="absolute right-6 bottom-6 w-64 bg-white/70 rounded-3xl p-5 shadow-xl border border-white">\
+                        <h3 class="text-[10px] font-black text-slate-400 uppercase mb-2">\uc0\u21363 \u26178 \u25136 \u22577 </h3>\
+                        <div class="space-y-2">\
+                            <div v-for="(log, idx) in roomLogs" :key="idx" :class="['text-sm font-bold p-2 rounded-xl', idx === 0 ? 'bg-rose-50 text-rose-600' : 'text-slate-400']">\
+                                \{\{ log \}\}\
+                            </div>\
+                        </div>\
+                    </div>\
+                </div>\
+            </div>\
+\
+            <!-- \uc0\u20114 \u21205 \u24392 \u31383  -->\
+            <div v-if="modal" class="absolute inset-0 bg-black/40 backdrop-blur-sm z-[500] flex items-center justify-center">\
+                <div class="bg-white p-10 rounded-[40px] shadow-2xl text-center max-w-sm w-full animate-popIn">\
+                    <div class="text-6xl mb-4">\{\{ modal.tile.icon \}\}</div>\
+                    <h2 class="text-2xl font-black mb-1">\{\{ modal.tile.name \}\}</h2>\
+                    <div class="text-3xl font-black text-rose-500 mb-6">$\{\{ modal.cost.toLocaleString() \}\}</div>\
+                    <div class="flex gap-4">\
+                        <button @click="handleAction(false)" class="flex-1 py-4 bg-slate-100 rounded-2xl font-black text-slate-400">\uc0\u21462 \u28040 </button>\
+                        <button @click="handleAction(true)" class="flex-1 py-4 bg-rose-400 text-white rounded-2xl font-black shadow-lg">\uc0\u30906 \u35469 </button>\
+                    </div>\
+                </div>\
             </div>\
         </div>\
     </div>\
 \
-    <div id="modal" class="fixed inset-0 z-[2000] bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-6">\
-        <div class="bg-white rounded-[50px] p-10 w-full max-w-sm text-center shadow-2xl border-b-8 border-sky-500">\
-            <h2 id="modal-t" class="text-3xl font-black text-slate-800 mb-2"></h2>\
-            <div id="modal-v" class="text-5xl font-black text-sky-600 mb-10 italic">$0</div>\
-            <div class="flex gap-4">\
-                <button id="btn-y" class="flex-[2] bg-sky-500 text-white py-6 rounded-3xl text-2xl font-black hover:bg-sky-600">\uc0\u25910 \u36092 </button>\
-                <button id="btn-n" class="flex-1 bg-slate-100 text-slate-400 py-6 rounded-3xl text-xl font-black">\uc0\u25918 \u26820 </button>\
-            </div>\
-        </div>\
-    </div>\
+    <script>\
+        const \{ createApp, ref, computed, onMounted \} = Vue;\
+\
+        const firebaseConfig = \{\
+            apiKey: "AIzaSyC7C... (\uc0\u35531 \u26356 \u25563 \u28858 \u20320 \u30340 \u23436 \u25972 \u37329 \u38000 )", \
+            authDomain: "monopoly-a3597.firebaseapp.com",\
+            projectId: "monopoly-a3597",\
+            storageBucket: "monopoly-a3597.firebasestorage.app",\
+            messagingSenderId: "542718165039",\
+            appId: "1:542718165039:web:9b9777926e85bc1389c560",\
+            measurementId: "G-6QNS4XW86C"\
+        \};\
+\
+        firebase.initializeApp(firebaseConfig);\
+        const db = firebase.firestore();\
+        const auth = firebase.auth();\
+        const appId = "taiwan-monopoly-final";\
+\
+        const BOARD = [\
+            \{ id: 0, name: '\uc0\u36215 \u40670 ', type: 'start', icon: '\u55357 \u57001 ' \},\
+            \{ id: 1, name: '\uc0\u23452 \u34349 ', price: 2000, icon: '\u55358 \u56738 ' \},\
+            \{ id: 2, name: '\uc0\u22522 \u38534 ', price: 1200, icon: '\u55357 \u56994 ' \},\
+            \{ id: 3, name: '\uc0\u21488 \u21271 ', price: 6000, icon: '\u55356 \u57314 ' \},\
+            \{ id: 4, name: '\uc0\u26032 \u21271 ', price: 2400, icon: '\u55356 \u57097 ' \},\
+            \{ id: 5, name: '\uc0\u26691 \u22290 ', price: 2200, icon: '\u9992 \u65039 ' \},\
+            \{ id: 6, name: '\uc0\u26032 \u31481 ', price: 2000, icon: '\u55357 \u56620 ' \},\
+            \{ id: 7, name: '\uc0\u33495 \u26647 ', price: 1800, icon: '\u55356 \u57171 ' \},\
+            \{ id: 8, name: '\uc0\u21488 \u20013 ', price: 3500, icon: '\u55358 \u56679 ' \},\
+            \{ id: 9, name: '\uc0\u21629 \u36939 ', type: 'chance', icon: '\u10067 ' \},\
+            \{ id: 10, name: '\uc0\u30475 \u23432 \u25152 ', type: 'jail', icon: '\u9878 \u65039 ' \},\
+            \{ id: 11, name: '\uc0\u24432 \u21270 ', price: 2000, icon: '\u9961 \u65039 ' \},\
+            \{ id: 12, name: '\uc0\u21335 \u25237 ', price: 1800, icon: '\u55356 \u57138 ' \},\
+            \{ id: 13, name: '\uc0\u27231 \u36935 ', type: 'chance', icon: '\u10024 ' \},\
+            \{ id: 14, name: '\uc0\u38642 \u26519 ', price: 1600, icon: '\u55358 \u56684 ' \},\
+            \{ id: 15, name: '\uc0\u22025 \u32681 ', price: 1800, icon: '\u55357 \u56340 ' \},\
+            \{ id: 16, name: '\uc0\u21488 \u21335 ', price: 3000, icon: '\u55356 \u57327 ' \},\
+            \{ id: 17, name: '\uc0\u21488 \u37941 ', price: 3000, icon: '\u55357 \u56966 ' \},\
+            \{ id: 18, name: '\uc0\u20241 \u24687 \u31449 ', type: 'rest', icon: '\u9749 ' \},\
+            \{ id: 19, name: '\uc0\u39640 \u38596 ', price: 4000, icon: '\u9875 ' \},\
+            \{ id: 20, name: '\uc0\u23631 \u26481 ', price: 1600, icon: '\u55356 \u57165 ' \},\
+            \{ id: 21, name: '\uc0\u21488 \u26481 ', price: 2000, icon: '\u55356 \u57224 ' \},\
+            \{ id: 22, name: '\uc0\u33457 \u34030 ', price: 2200, icon: '\u55357 \u56764 \u65039 ' \},\
+            \{ id: 23, name: '\uc0\u28558 \u28246 ', price: 1500, icon: '\u55356 \u57098 ' \},\
+            \{ id: 24, name: '\uc0\u37329 \u38272 ', price: 1500, icon: '\u55357 \u56618 ' \},\
+            \{ id: 25, name: '\uc0\u39340 \u31062 ', price: 1200, icon: '\u55358 \u57000 ' \},\
+            \{ id: 26, name: '\uc0\u21629 \u36939 ', type: 'chance', icon: '\u10067 ' \},\
+            \{ id: 27, name: '\uc0\u31237 \u25910 ', type: 'tax', icon: '\u55357 \u56504 ' \},\
+            \{ id: 28, name: '\uc0\u30435 \u29508 ', type: 'jail', icon: '\u55357 \u56430 ' \},\
+            \{ id: 29, name: '101', price: 9000, icon: '\uc0\u55357 \u56462 ' \},\
+            \{ id: 30, name: '\uc0\u27231 \u36935 ', type: 'chance', icon: '\u10024 ' \},\
+            \{ id: 31, name: '\uc0\u32317 \u32113 \u24220 ', price: 10000, icon: '\u55356 \u57307 \u65039 ' \},\
+            \{ id: 32, name: '\uc0\u20013 \u22830 \u37504 \u34892 ', type: 'bank', icon: '\u55356 \u57318 ' \},\
+            \{ id: 33, name: '\uc0\u21629 \u36939 ', type: 'chance', icon: '\u10067 ' \},\
+            \{ id: 34, name: '\uc0\u27231 \u36935 ', type: 'chance', icon: '\u10024 ' \},\
+            \{ id: 35, name: '\uc0\u35946 \u23429 ', price: 8000, icon: '\u55356 \u57328 ' \},\
+        ];\
+\
+        const AVATARS = [\
+            \{ id: 'dog', emoji: '\uc0\u55357 \u56374 ', color: '#FF9F43' \}, \{ id: 'cat', emoji: '\u55357 \u56369 ', color: '#54A0FF' \},\
+            \{ id: 'lion', emoji: '\uc0\u55358 \u56705 ', color: '#FF6B6B' \}, \{ id: 'penguin', emoji: '\u55357 \u56359 ', color: '#1DD1A1' \},\
+            \{ id: 'fox', emoji: '\uc0\u55358 \u56714 ', color: '#FFA502' \}, \{ id: 'koala', emoji: '\u55357 \u56360 ', color: '#A4B0BE' \},\
+            \{ id: 'rabbit', emoji: '\uc0\u55357 \u56368 ', color: '#FF9FF3' \}, \{ id: 'panda', emoji: '\u55357 \u56380 ', color: '#2F3542' \}\
+        ];\
+\
+        createApp(\{\
+            setup() \{\
+                const view = ref('login');\
+                const userName = ref('\uc0\u26480 \u21733 ');\
+                const selectedAvatar = ref(AVATARS[0]);\
+                const myId = ref('');\
+                const rooms = ref([]);\
+                const currentRoomId = ref('');\
+                const currentRoom = ref(null);\
+                const dice = ref(1);\
+                const rolling = ref(false);\
+                const isMoving = ref(false);\
+                const visualPositions = ref(\{\});\
+                const jumpStates = ref(\{\});\
+                const moneyParticles = ref([]);\
+                const modal = ref(null);\
+                const eventToast = ref(null);\
+                const winner = ref(null);\
+\
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();\
+                const playSfx = (freq, type = 'sine', duration = 0.1) => \{\
+                    const osc = audioCtx.createOscillator();\
+                    const gain = audioCtx.createGain();\
+                    osc.type = type;\
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);\
+                    gain.gain.setValueAtTime(0.05, audioCtx.currentTime);\
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);\
+                    osc.connect(gain); gain.connect(audioCtx.destination);\
+                    osc.start(); osc.stop(audioCtx.currentTime + duration);\
+                \};\
+\
+                onMounted(async () => \{\
+                    const cred = await auth.signInAnonymously();\
+                    myId.value = cred.user.uid;\
+                \});\
+\
+                const enterLobby = () => \{\
+                    view.value = 'lobby';\
+                    db.collection('artifacts').doc(appId).collection('public').doc('data').collection('rooms')\
+                        .where('status', '==', 'waiting')\
+                        .onSnapshot(snap => \{\
+                            rooms.value = snap.docs.map(d => (\{ id: d.id, ...d.data() \}));\
+                        \});\
+                \};\
+\
+                const createRoom = async () => \{\
+                    const rid = 'room_' + Date.now();\
+                    await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('rooms').doc(rid).set(\{\
+                        name: userName.value + ' \uc0\u30340 \u25136 \u23616 ',\
+                        status: 'waiting',\
+                        turn: 0,\
+                        host: myId.value,\
+                        players: [\{\
+                            uid: myId.value, name: userName.value, avatar: selectedAvatar.value,\
+                            money: 30000, pos: 0, lands: [], isBot: false, skipTurns: 0\
+                        \}],\
+                        logs: ['\uc0\u25136 \u39717 \u38283 \u22987 \u65281 ']\
+                    \});\
+                    joinRoom(rid);\
+                \};\
+\
+                const joinRoom = (rid) => \{\
+                    currentRoomId.value = rid;\
+                    db.collection('artifacts').doc(appId).collection('public').doc('data').collection('rooms').doc(rid)\
+                        .onSnapshot(snap => \{\
+                            if (!snap.exists) return;\
+                            const data = snap.data();\
+                            currentRoom.value = data;\
+                            if (data.status === 'playing') view.value = 'game';\
+                            else view.value = 'waiting';\
+\
+                            data.players.forEach(p => \{\
+                                if (!isMoving.value) visualPositions.value[p.uid] = p.pos;\
+                            \});\
+\
+                            const actives = data.players.filter(p => p.money >= 0);\
+                            if (data.status === 'playing' && actives.length === 1 && data.players.length > 1) \{\
+                                winner.value = actives[0];\
+                            \}\
+                        \});\
+                \};\
+\
+                const addBot = async () => \{\
+                    const bot = \{\
+                        uid: 'bot_' + Math.random(),\
+                        name: 'AI \uc0\u23565 \u25163 ',\
+                        avatar: AVATARS[Math.floor(Math.random() * AVATARS.length)],\
+                        money: 30000, pos: 0, lands: [], isBot: true, skipTurns: 0\
+                    \};\
+                    await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('rooms').doc(currentRoomId.value).update(\{\
+                        players: [...currentRoom.value.players, bot]\
+                    \});\
+                \};\
+\
+                const startGame = async () => \{\
+                    await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('rooms').doc(currentRoomId.value).update(\{ status: 'playing' \});\
+                \};\
+\
+                const rollDiceAction = () => \{\
+                    if (rolling.value || isMoving.value) return;\
+                    rolling.value = true;\
+                    playSfx(150, 'square', 0.5);\
+                    setTimeout(() => \{\
+                        dice.value = Math.floor(Math.random() * 6) + 1;\
+                        rolling.value = false;\
+                        movePlayer(dice.value);\
+                    \}, 1000);\
+                \};\
+\
+                const movePlayer = async (steps) => \{\
+                    isMoving.value = true;\
+                    let players = [...currentRoom.value.players];\
+                    let p = players[currentRoom.value.turn];\
+                    \
+                    for (let i = 1; i <= steps; i++) \{\
+                        p.pos = (p.pos + 1) % BOARD.length;\
+                        visualPositions.value[p.uid] = p.pos;\
+                        jumpStates.value[p.uid] = true;\
+                        playSfx(523 + i * 40);\
+                        if (p.pos === 0) \{\
+                            p.money += 2000;\
+                            showMoneyEffect("+2000");\
+                        \}\
+                        await new Promise(r => setTimeout(r, 400));\
+                        jumpStates.value[p.uid] = false;\
+                    \}\
+                    handleTile(p, players);\
+                \};\
+\
+                const handleTile = (p, players) => \{\
+                    const tile = BOARD[p.pos];\
+                    const owner = players.find(pl => pl.lands.some(l => l.id === p.pos));\
+\
+                    if (tile.price && !owner) \{\
+                        if (p.isBot) \{\
+                            if (p.money > tile.price + 5000) \{\
+                                p.money -= tile.price;\
+                                p.lands.push(\{ id: tile.id, lvl: 0 \});\
+                                finishTurn(players, [`\uc0\u55356 \u57312  AI \u36023 \u19979 \u20102  $\{tile.name\}`]);\
+                            \} else finishTurn(players);\
+                        \} else \{\
+                            modal.value = \{ type: 'buy', tile, cost: tile.price, players \};\
+                        \}\
+                    \} else if (owner && owner.uid !== p.uid) \{\
+                        const land = owner.lands.find(l => l.id === p.pos);\
+                        const rent = Math.floor(tile.price * (0.2 + land.lvl * 0.4));\
+                        p.money -= rent;\
+                        owner.money += rent;\
+                        showMoneyEffect("-" + rent);\
+                        finishTurn(players, [`\uc0\u55357 \u56504  $\{p.name\} \u20184 \u31199 \u37329 \u32102  $\{owner.name\}`]);\
+                    \} else finishTurn(players);\
+                \};\
+\
+                const handleAction = (confirm) => \{\
+                    const \{ type, tile, cost, players \} = modal.value;\
+                    const p = players[currentRoom.value.turn];\
+                    if (confirm && p.money >= cost) \{\
+                        p.money -= cost;\
+                        p.lands.push(\{ id: tile.id, lvl: 0 \});\
+                        finishTurn(players, [`\uc0\u10024  $\{p.name\} \u36023 \u19979 \u22320 \u29986 `]);\
+                    \} else finishTurn(players);\
+                    modal.value = null;\
+                \};\
+\
+                const finishTurn = async (newPlayers, logs = []) => \{\
+                    isMoving.value = false;\
+                    const nextTurn = (currentRoom.value.turn + 1) % newPlayers.length;\
+                    await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('rooms').doc(currentRoomId.value).update(\{\
+                        players: newPlayers, turn: nextTurn,\
+                        logs: [...currentRoom.value.logs.slice(-5), ...logs]\
+                    \});\
+                \};\
+\
+                const showMoneyEffect = (amount) => \{\
+                    const id = Date.now();\
+                    moneyParticles.value.push(\{ id, amount, x: 50, y: 50 \});\
+                    setTimeout(() => \{ moneyParticles.value = moneyParticles.value.filter(m => m.id !== id); \}, 1200);\
+                \};\
+\
+                return \{\
+                    view, userName, selectedAvatar, rooms, currentRoom, currentRoomId,\
+                    dice, rolling, visualPositions, jumpStates, moneyParticles, modal, eventToast, winner,\
+                    AVATARS, BOARD, myId,\
+                    getGridStyle: (i) => \{\
+                        if (i <= 10) return \{ gridRow: 9, gridColumn: 11 - i \};\
+                        if (i <= 17) return \{ gridRow: 9 - (i - 10), gridColumn: 1 \};\
+                        if (i <= 28) return \{ gridRow: 1, gridColumn: i - 17 \};\
+                        return \{ gridRow: i - 27, gridColumn: 11 \};\
+                    \},\
+                    getPlayersAt: (i) => currentRoom.value?.players.filter(p => visualPositions.value[p.uid] === i && p.money >= 0) || [],\
+                    getOwner: (i) => currentRoom.value?.players.find(p => p.lands.some(l => l.id === i)),\
+                    getLandLvl: (i) => \{\
+                        const owner = currentRoom.value?.players.find(p => p.lands.some(l => l.id === i));\
+                        return owner?.lands.find(l => l.id === i)?.lvl || 0;\
+                    \},\
+                    roomLogs: computed(() => [...(currentRoom.value?.logs || [])].reverse()),\
+                    isHost: computed(() => currentRoom.value?.host === myId.value),\
+                    canRoll: computed(() => !rolling.value && !isMoving.value && currentRoom.value?.status === 'playing' && currentRoom.value.players[currentRoom.value.turn].uid === myId.value),\
+                    enterLobby, createRoom, joinRoom, addBot, startGame, rollDiceAction, handleAction\
+                \};\
+            \}\
+        \}).mount('#app');\
+    </script>\
 </body>\
-</html>\
-}
+</html>}
