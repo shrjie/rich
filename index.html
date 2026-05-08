@@ -1,460 +1,453 @@
-{\rtf1\ansi\ansicpg950\cocoartf2869
-\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
-{\colortbl;\red255\green255\blue255;}
-{\*\expandedcolortbl;;}
-\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台灣大富翁 - 杰哥專屬版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <style>
+        @keyframes rotateDice { 0% { transform: rotateX(0deg) rotateY(0deg); } 100% { transform: rotateX(360deg) rotateY(360deg); } }
+        @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes jump { 0% { transform: translateY(0) scale(1); } 50% { transform: translateY(-25px) scale(1.1); } 100% { transform: translateY(0) scale(1); } }
+        @keyframes moneyFloat { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-80px); opacity: 0; } }
+        [v-cloak] { display: none; }
+        .animate-popIn { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .jump-animation { animation: jump 0.45s ease-in-out; }
+        .money-particle { position: absolute; font-weight: 900; font-size: 1.8rem; pointer-events: none; z-index: 1000; text-shadow: 0 0 8px rgba(0,0,0,0.3); animation: moneyFloat 1.2s ease-out forwards; }
+        .dice-container { width: 120px; height: 120px; perspective: 1000px; }
+        .dice { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 1s cubic-bezier(0.15, 0.85, 0.35, 1.2); }
+        .dice.rolling { animation: rotateDice 0.5s infinite linear; }
+        .face { position: absolute; width: 120px; height: 120px; background: white; border: 2px solid #e2e8f0; border-radius: 24px; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 15px rgba(0,0,0,0.05); }
+        .front  { transform: rotateY(0deg) translateZ(60px); }
+        .back   { transform: rotateY(180deg) translateZ(60px); }
+        .right  { transform: rotateY(90deg) translateZ(60px); }
+        .left   { transform: rotateY(-90deg) translateZ(60px); }
+        .top    { transform: rotateX(90deg) translateZ(60px); }
+        .bottom { transform: rotateX(-90deg) translateZ(60px); }
+        .show-1 { transform: rotateX(0deg) rotateY(0deg); }
+        .show-6 { transform: rotateX(0deg) rotateY(180deg); }
+        .show-3 { transform: rotateX(0deg) rotateY(-90deg); }
+        .show-4 { transform: rotateX(0deg) rotateY(90deg); }
+        .show-2 { transform: rotateX(-90deg) rotateY(0deg); }
+        .show-5 { transform: rotateX(90deg) rotateY(0deg); }
+        .dot { border-radius: 50%; }
+        .dot-red { background-color: #ef4444; }
+        .dot-black { background-color: #1e293b; }
+    </style>
+</head>
+<body class="bg-slate-200 overflow-hidden font-sans">
+    <div id="app" v-cloak>
+        <!-- 登入畫面 -->
+        <div v-if="view === 'login'" class="h-screen flex items-center justify-center p-4">
+            <div class="bg-white p-10 rounded-[40px] shadow-2xl text-center max-w-md w-full animate-popIn">
+                <h1 class="text-4xl font-black mb-8 text-slate-800 italic tracking-tighter uppercase">Taiwan Monopoly</h1>
+                <div class="grid grid-cols-4 gap-2 mb-8 bg-slate-50 p-4 rounded-3xl">
+                    <button v-for="av in AVATARS" :key="av.id" @click="selectedAvatar = av" 
+                        :class="['text-3xl p-2 rounded-xl border-4 transition-all', selectedAvatar.id === av.id ? 'border-rose-400 scale-110 bg-white' : 'border-transparent']">
+                        {{ av.emoji }}
+                    </button>
+                </div>
+                <input v-model="userName" class="w-full bg-slate-100 p-4 rounded-2xl text-center font-bold mb-6 text-xl" placeholder="輸入名稱" />
+                <button @click="enterLobby" class="w-full bg-rose-400 text-white py-4 rounded-2xl font-black text-xl hover:bg-rose-500 shadow-lg">進入大廳</button>
+            </div>
+        </div>
 
-\f0\fs24 \cf0 <!DOCTYPE html>\
-<html lang="zh-TW">\
-<head>\
-    <meta charset="UTF-8">\
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">\
-    <title>\uc0\u21488 \u28771 \u22823 \u23500 \u32705  - \u26480 \u21733 \u23560 \u23660 \u29256 </title>\
-    <script src="https://cdn.tailwindcss.com"></script>\
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>\
-    <!-- Firebase SDKs -->\
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>\
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>\
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>\
-    <style>\
-        @keyframes rotateDice \{ 0% \{ transform: rotateX(0deg) rotateY(0deg); \} 100% \{ transform: rotateX(360deg) rotateY(360deg); \} \}\
-        @keyframes popIn \{ 0% \{ transform: scale(0.8); opacity: 0; \} 100% \{ transform: scale(1); opacity: 1; \} \}\
-        @keyframes jump \{ 0% \{ transform: translateY(0) scale(1); \} 50% \{ transform: translateY(-25px) scale(1.1); \} 100% \{ transform: translateY(0) scale(1); \} \}\
-        @keyframes moneyFloat \{ 0% \{ transform: translateY(0); opacity: 1; \} 100% \{ transform: translateY(-80px); opacity: 0; \} \}\
-        [v-cloak] \{ display: none; \}\
-        .animate-popIn \{ animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; \}\
-        .jump-animation \{ animation: jump 0.45s ease-in-out; \}\
-        .money-particle \{ position: absolute; font-weight: 900; font-size: 1.8rem; pointer-events: none; z-index: 1000; text-shadow: 0 0 8px rgba(0,0,0,0.3); animation: moneyFloat 1.2s ease-out forwards; \}\
-        .dice-container \{ width: 120px; height: 120px; perspective: 1000px; \}\
-        .dice \{ width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 1s cubic-bezier(0.15, 0.85, 0.35, 1.2); \}\
-        .dice.rolling \{ animation: rotateDice 0.5s infinite linear; \}\
-        .face \{ position: absolute; width: 120px; height: 120px; background: white; border: 2px solid #e2e8f0; border-radius: 24px; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 15px rgba(0,0,0,0.05); \}\
-        .front  \{ transform: rotateY(0deg) translateZ(60px); \}\
-        .back   \{ transform: rotateY(180deg) translateZ(60px); \}\
-        .right  \{ transform: rotateY(90deg) translateZ(60px); \}\
-        .left   \{ transform: rotateY(-90deg) translateZ(60px); \}\
-        .top    \{ transform: rotateX(90deg) translateZ(60px); \}\
-        .bottom \{ transform: rotateX(-90deg) translateZ(60px); \}\
-        .show-1 \{ transform: rotateX(0deg) rotateY(0deg); \}\
-        .show-6 \{ transform: rotateX(0deg) rotateY(180deg); \}\
-        .show-3 \{ transform: rotateX(0deg) rotateY(-90deg); \}\
-        .show-4 \{ transform: rotateX(0deg) rotateY(90deg); \}\
-        .show-2 \{ transform: rotateX(-90deg) rotateY(0deg); \}\
-        .show-5 \{ transform: rotateX(90deg) rotateY(0deg); \}\
-        .dot \{ border-radius: 50%; \}\
-        .dot-red \{ background-color: #ef4444; \}\
-        .dot-black \{ background-color: #1e293b; \}\
-    </style>\
-</head>\
-<body class="bg-slate-200 overflow-hidden font-sans">\
-    <div id="app" v-cloak>\
-        <!-- \uc0\u30331 \u20837 \u30059 \u38754  -->\
-        <div v-if="view === 'login'" class="h-screen flex items-center justify-center p-4">\
-            <div class="bg-white p-10 rounded-[40px] shadow-2xl text-center max-w-md w-full animate-popIn">\
-                <h1 class="text-4xl font-black mb-8 text-slate-800 italic tracking-tighter uppercase">Taiwan Monopoly</h1>\
-                <div class="grid grid-cols-4 gap-2 mb-8 bg-slate-50 p-4 rounded-3xl">\
-                    <button v-for="av in AVATARS" :key="av.id" @click="selectedAvatar = av" \
-                        :class="['text-3xl p-2 rounded-xl border-4 transition-all', selectedAvatar.id === av.id ? 'border-rose-400 scale-110 bg-white' : 'border-transparent']">\
-                        \{\{ av.emoji \}\}\
-                    </button>\
-                </div>\
-                <input v-model="userName" class="w-full bg-slate-100 p-4 rounded-2xl text-center font-bold mb-6 text-xl" placeholder="\uc0\u36664 \u20837 \u21517 \u31281 " />\
-                <button @click="enterLobby" class="w-full bg-rose-400 text-white py-4 rounded-2xl font-black text-xl hover:bg-rose-500 shadow-lg">\uc0\u36914 \u20837 \u22823 \u24307 </button>\
-            </div>\
-        </div>\
-\
-        <!-- \uc0\u22823 \u24307 \u30059 \u38754  -->\
-        <div v-else-if="view === 'lobby'" class="h-screen p-6 flex flex-col items-center overflow-auto">\
-            <div class="max-w-2xl w-full flex justify-between items-center bg-white p-6 rounded-3xl shadow-sm mb-6">\
-                <h2 class="text-2xl font-black text-slate-800">\uc0\u36938 \u25138 \u22823 \u24307 </h2>\
-                <button @click="createRoom" class="bg-rose-400 text-white px-8 py-3 rounded-xl font-bold">\uc0\u21109 \u24314 \u25151 \u38291 </button>\
-            </div>\
-            <div class="grid grid-cols-1 gap-4 w-full max-w-2xl">\
-                <div v-if="rooms.length === 0" class="text-center py-10 text-slate-400 font-bold">\uc0\u30446 \u21069 \u27794 \u26377 \u25136 \u23616 </div>\
-                <div v-for="r in rooms" :key="r.id" @click="joinRoom(r.id)" class="bg-white p-6 rounded-3xl shadow-sm flex justify-between items-center cursor-pointer hover:border-rose-300 border border-transparent transition-all">\
-                    <div class="font-bold text-xl">\{\{ r.name \}\}</div>\
-                    <div class="bg-slate-100 px-4 py-2 rounded-lg text-slate-500 font-bold">\uc0\u36914 \u20837 \u25151 \u38291 </div>\
-                </div>\
-            </div>\
-        </div>\
-\
-        <!-- \uc0\u31561 \u24453 \u30059 \u38754  -->\
-        <div v-else-if="view === 'waiting'" class="h-screen flex flex-col items-center justify-center p-6">\
-            <div class="bg-white p-10 rounded-[40px] shadow-xl w-full max-w-md text-center">\
-                <h2 class="text-2xl font-black mb-6">\uc0\u31561 \u24453 \u38283 \u25136 ...</h2>\
-                <div class="grid grid-cols-2 gap-4 mb-6">\
-                    <div v-for="p in currentRoom?.players" :key="p.uid" class="bg-slate-50 p-4 rounded-3xl flex flex-col items-center border-2 border-white shadow-sm">\
-                        <div class="text-4xl mb-2">\{\{ p.avatar.emoji \}\}</div>\
-                        <div class="font-bold">\{\{ p.name \}\}</div>\
-                    </div>\
-                    <button v-if="currentRoom?.players.length < 4 && isHost" @click="addBot" class="border-2 border-dashed border-slate-200 rounded-3xl flex items-center justify-center p-4 text-slate-300 font-bold">+ \uc0\u21152 \u20837  AI</button>\
-                </div>\
-                <div class="flex gap-4">\
-                    <button @click="view = 'lobby'" class="flex-1 bg-slate-100 text-slate-400 py-4 rounded-2xl font-black">\uc0\u36820 \u22238 </button>\
-                    <button v-if="isHost" @click="startGame" class="flex-[2] bg-rose-400 text-white py-4 rounded-2xl font-black shadow-lg">\uc0\u38283 \u22987 \u36938 \u25138 </button>\
-                </div>\
-            </div>\
-        </div>\
-\
-        <!-- \uc0\u36938 \u25138 \u30059 \u38754  -->\
-        <div v-else-if="view === 'game'" class="h-screen flex items-center justify-center p-2 relative overflow-hidden">\
-            <div v-if="eventToast" class="absolute top-10 left-1/2 -translate-x-1/2 z-[300] bg-rose-500 text-white px-10 py-4 rounded-full shadow-2xl border-4 border-white font-black animate-bounce">\{\{ eventToast \}\}</div>\
-            \
-            <!-- \uc0\u37329 \u37666 \u28418 \u28014 \u29305 \u25928  -->\
-            <div v-for="p in moneyParticles" :key="p.id" class="money-particle" :style="\{ left: p.x+'%', top: p.y+'%', color: p.amount.toString().startsWith('-') ? '#FF6B6B' : '#ffd700' \}">\
-                \{\{ p.amount \}\}\
-            </div>\
-\
-            <!-- \uc0\u21213 \u21033 \u30059 \u38754  -->\
-            <div v-if="winner" class="absolute inset-0 z-[600] bg-black/80 flex flex-col items-center justify-center text-white p-10 animate-popIn">\
-                <div class="text-9xl mb-4 animate-bounce">\uc0\u55356 \u57286 </div>\
-                <h1 class="text-6xl font-black mb-2">\{\{ winner.name \}\}</h1>\
-                <p class="text-2xl font-bold text-rose-400 mb-8">\uc0\u32113 \u27835 \u20102 \u21488 \u28771 \u25151 \u22320 \u29986 \u65281 </p>\
-                <button @click="location.reload()" class="bg-rose-400 px-10 py-4 rounded-2xl font-black text-2xl">\uc0\u20877 \u29609 \u19968 \u23616 </button>\
-            </div>\
-\
-            <!-- \uc0\u22320 \u22294 \u26827 \u30436  -->\
-            <div class="bg-white rounded-[40px] shadow-2xl w-full h-full max-w-[1200px] max-h-[900px] grid grid-cols-11 grid-rows-9 p-2 gap-1 relative border-4 border-white">\
-                <div v-for="(tile, i) in BOARD" :key="i" :style="getGridStyle(i)" class="relative border border-slate-100 flex flex-col items-center justify-center rounded-xl overflow-hidden shadow-sm p-1 bg-white">\
-                    <div v-if="getOwner(i)" class="absolute bottom-0 inset-x-0 h-1" :style="\{backgroundColor: getOwner(i).avatar.color\}"></div>\
-                    <div v-if="getLandLvl(i) > 0" class="absolute top-1 right-1 text-[10px] bg-white rounded px-1 font-bold shadow-sm">\{\{ ['\uc0\u55356 \u57312 ','\u55356 \u57304 \u65039 ','\u55356 \u57320 '][getLandLvl(i)-1] \}\}</div>\
-                    \
-                    <div class="flex flex-col items-center justify-between w-full h-full py-1">\
-                        <div class="text-[10px] md:text-[11px] font-black text-slate-800 text-center leading-tight">\{\{ tile.name \}\}</div>\
-                        <div class="text-xl md:text-2xl my-0.5">\{\{ tile.icon \}\}</div>\
-                        <div class="h-[12px]"><div v-if="tile.price" class="text-[10px] font-black text-rose-500">$\{\{ tile.price \}\}</div></div>\
-                    </div>\
-\
-                    <!-- \uc0\u29609 \u23478 \u26827 \u23376  -->\
-                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-20 flex-wrap gap-0.5">\
-                        <div v-for="p in getPlayersAt(i)" :key="p.uid" :class="['w-7 h-7 md:w-9 md:h-9 rounded-full border-2 border-white flex items-center justify-center text-lg shadow-md transition-all duration-300', jumpStates[p.uid] ? 'jump-animation' : '']" :style="\{backgroundColor: p.avatar.color\}">\
-                            \{\{ p.avatar.emoji \}\}\
-                        </div>\
-                    </div>\
-                </div>\
-\
-                <!-- \uc0\u20013 \u24515 \u21312 \u22495  -->\
-                <div class="col-start-2 col-end-11 row-start-2 row-end-9 bg-slate-50/50 rounded-3xl m-1 relative flex items-center justify-center">\
-                    <!-- \uc0\u29609 \u23478 \u36039 \u35338  -->\
-                    <div class="absolute top-6 left-6 space-y-2">\
-                        <div v-for="(p, idx) in currentRoom?.players" :key="p.uid" :class="['flex items-center gap-3 p-3 rounded-2xl transition-all', p.money < 0 ? 'opacity-40' : currentRoom.turn === idx ? 'bg-white shadow-xl ring-2 ring-rose-400 scale-105' : 'bg-white/40']">\
-                            <div class="text-3xl">\{\{ p.money < 0 ? '\uc0\u55357 \u56448 ' : p.avatar.emoji \}\}</div>\
-                            <div>\
-                                <div class="text-[10px] font-black text-slate-500">\{\{ p.name \}\}</div>\
-                                <div class="font-black text-lg text-rose-500">$\{\{ p.money.toLocaleString() \}\}</div>\
-                            </div>\
-                        </div>\
-                    </div>\
-\
-                    <!-- \uc0\u39600 \u23376  -->\
-                    <div class="flex flex-col items-center">\
-                        <div class="dice-container">\
-                            <div :class="['dice', rolling ? 'rolling' : '', 'show-' + dice]">\
-                                <div class="face front"><div class="dot w-8 h-8 dot-red"></div></div>\
-                                <div class="face back"><div class="grid grid-cols-2 gap-4"><div v-for="n in 6" class="dot w-4 h-4 dot-black"></div></div></div>\
-                                <div class="face right"><div class="grid grid-cols-2 gap-4"><div v-for="n in 3" class="dot w-4 h-4 dot-black"></div></div></div>\
-                                <div class="face left"><div class="grid grid-cols-2 gap-4"><div v-for="n in 4" class="dot w-4 h-4 dot-black"></div></div></div>\
-                                <div class="face top"><div class="grid grid-cols-1 gap-4"><div v-for="n in 2" class="dot w-4 h-4 dot-black"></div></div></div>\
-                                <div class="face bottom"><div class="grid grid-cols-1 gap-4"><div v-for="n in 5" class="dot w-4 h-4 dot-black"></div></div></div>\
-                            </div>\
-                        </div>\
-                        <button v-if="canRoll" @click="rollDiceAction" class="mt-8 bg-rose-400 text-white px-12 py-4 rounded-full font-black text-xl shadow-xl hover:bg-rose-500 transition-all">\uc0\u25842 \u39600 \u23376 </button>\
-                    </div>\
-\
-                    <!-- \uc0\u25136 \u22577  -->\
-                    <div class="absolute right-6 bottom-6 w-64 bg-white/70 rounded-3xl p-5 shadow-xl border border-white">\
-                        <h3 class="text-[10px] font-black text-slate-400 uppercase mb-2">\uc0\u21363 \u26178 \u25136 \u22577 </h3>\
-                        <div class="space-y-2">\
-                            <div v-for="(log, idx) in roomLogs" :key="idx" :class="['text-sm font-bold p-2 rounded-xl', idx === 0 ? 'bg-rose-50 text-rose-600' : 'text-slate-400']">\
-                                \{\{ log \}\}\
-                            </div>\
-                        </div>\
-                    </div>\
-                </div>\
-            </div>\
-\
-            <!-- \uc0\u20114 \u21205 \u24392 \u31383  -->\
-            <div v-if="modal" class="absolute inset-0 bg-black/40 backdrop-blur-sm z-[500] flex items-center justify-center">\
-                <div class="bg-white p-10 rounded-[40px] shadow-2xl text-center max-w-sm w-full animate-popIn">\
-                    <div class="text-6xl mb-4">\{\{ modal.tile.icon \}\}</div>\
-                    <h2 class="text-2xl font-black mb-1">\{\{ modal.tile.name \}\}</h2>\
-                    <div class="text-3xl font-black text-rose-500 mb-6">$\{\{ modal.cost.toLocaleString() \}\}</div>\
-                    <div class="flex gap-4">\
-                        <button @click="handleAction(false)" class="flex-1 py-4 bg-slate-100 rounded-2xl font-black text-slate-400">\uc0\u21462 \u28040 </button>\
-                        <button @click="handleAction(true)" class="flex-1 py-4 bg-rose-400 text-white rounded-2xl font-black shadow-lg">\uc0\u30906 \u35469 </button>\
-                    </div>\
-                </div>\
-            </div>\
-        </div>\
-    </div>\
-\
-    <script>\
-        const \{ createApp, ref, computed, onMounted \} = Vue;\
-\
-        const firebaseConfig = \{\
-            apiKey: "AIzaSyC7C... (\uc0\u35531 \u26356 \u25563 \u28858 \u20320 \u30340 \u23436 \u25972 \u37329 \u38000 )", \
-            authDomain: "monopoly-a3597.firebaseapp.com",\
-            projectId: "monopoly-a3597",\
-            storageBucket: "monopoly-a3597.firebasestorage.app",\
-            messagingSenderId: "542718165039",\
-            appId: "1:542718165039:web:9b9777926e85bc1389c560",\
-            measurementId: "G-6QNS4XW86C"\
-        \};\
-\
-        firebase.initializeApp(firebaseConfig);\
-        const db = firebase.firestore();\
-        const auth = firebase.auth();\
-        const appId = "taiwan-monopoly-final";\
-\
-        const BOARD = [\
-            \{ id: 0, name: '\uc0\u36215 \u40670 ', type: 'start', icon: '\u55357 \u57001 ' \},\
-            \{ id: 1, name: '\uc0\u23452 \u34349 ', price: 2000, icon: '\u55358 \u56738 ' \},\
-            \{ id: 2, name: '\uc0\u22522 \u38534 ', price: 1200, icon: '\u55357 \u56994 ' \},\
-            \{ id: 3, name: '\uc0\u21488 \u21271 ', price: 6000, icon: '\u55356 \u57314 ' \},\
-            \{ id: 4, name: '\uc0\u26032 \u21271 ', price: 2400, icon: '\u55356 \u57097 ' \},\
-            \{ id: 5, name: '\uc0\u26691 \u22290 ', price: 2200, icon: '\u9992 \u65039 ' \},\
-            \{ id: 6, name: '\uc0\u26032 \u31481 ', price: 2000, icon: '\u55357 \u56620 ' \},\
-            \{ id: 7, name: '\uc0\u33495 \u26647 ', price: 1800, icon: '\u55356 \u57171 ' \},\
-            \{ id: 8, name: '\uc0\u21488 \u20013 ', price: 3500, icon: '\u55358 \u56679 ' \},\
-            \{ id: 9, name: '\uc0\u21629 \u36939 ', type: 'chance', icon: '\u10067 ' \},\
-            \{ id: 10, name: '\uc0\u30475 \u23432 \u25152 ', type: 'jail', icon: '\u9878 \u65039 ' \},\
-            \{ id: 11, name: '\uc0\u24432 \u21270 ', price: 2000, icon: '\u9961 \u65039 ' \},\
-            \{ id: 12, name: '\uc0\u21335 \u25237 ', price: 1800, icon: '\u55356 \u57138 ' \},\
-            \{ id: 13, name: '\uc0\u27231 \u36935 ', type: 'chance', icon: '\u10024 ' \},\
-            \{ id: 14, name: '\uc0\u38642 \u26519 ', price: 1600, icon: '\u55358 \u56684 ' \},\
-            \{ id: 15, name: '\uc0\u22025 \u32681 ', price: 1800, icon: '\u55357 \u56340 ' \},\
-            \{ id: 16, name: '\uc0\u21488 \u21335 ', price: 3000, icon: '\u55356 \u57327 ' \},\
-            \{ id: 17, name: '\uc0\u21488 \u37941 ', price: 3000, icon: '\u55357 \u56966 ' \},\
-            \{ id: 18, name: '\uc0\u20241 \u24687 \u31449 ', type: 'rest', icon: '\u9749 ' \},\
-            \{ id: 19, name: '\uc0\u39640 \u38596 ', price: 4000, icon: '\u9875 ' \},\
-            \{ id: 20, name: '\uc0\u23631 \u26481 ', price: 1600, icon: '\u55356 \u57165 ' \},\
-            \{ id: 21, name: '\uc0\u21488 \u26481 ', price: 2000, icon: '\u55356 \u57224 ' \},\
-            \{ id: 22, name: '\uc0\u33457 \u34030 ', price: 2200, icon: '\u55357 \u56764 \u65039 ' \},\
-            \{ id: 23, name: '\uc0\u28558 \u28246 ', price: 1500, icon: '\u55356 \u57098 ' \},\
-            \{ id: 24, name: '\uc0\u37329 \u38272 ', price: 1500, icon: '\u55357 \u56618 ' \},\
-            \{ id: 25, name: '\uc0\u39340 \u31062 ', price: 1200, icon: '\u55358 \u57000 ' \},\
-            \{ id: 26, name: '\uc0\u21629 \u36939 ', type: 'chance', icon: '\u10067 ' \},\
-            \{ id: 27, name: '\uc0\u31237 \u25910 ', type: 'tax', icon: '\u55357 \u56504 ' \},\
-            \{ id: 28, name: '\uc0\u30435 \u29508 ', type: 'jail', icon: '\u55357 \u56430 ' \},\
-            \{ id: 29, name: '101', price: 9000, icon: '\uc0\u55357 \u56462 ' \},\
-            \{ id: 30, name: '\uc0\u27231 \u36935 ', type: 'chance', icon: '\u10024 ' \},\
-            \{ id: 31, name: '\uc0\u32317 \u32113 \u24220 ', price: 10000, icon: '\u55356 \u57307 \u65039 ' \},\
-            \{ id: 32, name: '\uc0\u20013 \u22830 \u37504 \u34892 ', type: 'bank', icon: '\u55356 \u57318 ' \},\
-            \{ id: 33, name: '\uc0\u21629 \u36939 ', type: 'chance', icon: '\u10067 ' \},\
-            \{ id: 34, name: '\uc0\u27231 \u36935 ', type: 'chance', icon: '\u10024 ' \},\
-            \{ id: 35, name: '\uc0\u35946 \u23429 ', price: 8000, icon: '\u55356 \u57328 ' \},\
-        ];\
-\
-        const AVATARS = [\
-            \{ id: 'dog', emoji: '\uc0\u55357 \u56374 ', color: '#FF9F43' \}, \{ id: 'cat', emoji: '\u55357 \u56369 ', color: '#54A0FF' \},\
-            \{ id: 'lion', emoji: '\uc0\u55358 \u56705 ', color: '#FF6B6B' \}, \{ id: 'penguin', emoji: '\u55357 \u56359 ', color: '#1DD1A1' \},\
-            \{ id: 'fox', emoji: '\uc0\u55358 \u56714 ', color: '#FFA502' \}, \{ id: 'koala', emoji: '\u55357 \u56360 ', color: '#A4B0BE' \},\
-            \{ id: 'rabbit', emoji: '\uc0\u55357 \u56368 ', color: '#FF9FF3' \}, \{ id: 'panda', emoji: '\u55357 \u56380 ', color: '#2F3542' \}\
-        ];\
-\
-        createApp(\{\
-            setup() \{\
-                const view = ref('login');\
-                const userName = ref('\uc0\u26480 \u21733 ');\
-                const selectedAvatar = ref(AVATARS[0]);\
-                const myId = ref('');\
-                const rooms = ref([]);\
-                const currentRoomId = ref('');\
-                const currentRoom = ref(null);\
-                const dice = ref(1);\
-                const rolling = ref(false);\
-                const isMoving = ref(false);\
-                const visualPositions = ref(\{\});\
-                const jumpStates = ref(\{\});\
-                const moneyParticles = ref([]);\
-                const modal = ref(null);\
-                const eventToast = ref(null);\
-                const winner = ref(null);\
-\
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();\
-                const playSfx = (freq, type = 'sine', duration = 0.1) => \{\
-                    const osc = audioCtx.createOscillator();\
-                    const gain = audioCtx.createGain();\
-                    osc.type = type;\
-                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);\
-                    gain.gain.setValueAtTime(0.05, audioCtx.currentTime);\
-                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);\
-                    osc.connect(gain); gain.connect(audioCtx.destination);\
-                    osc.start(); osc.stop(audioCtx.currentTime + duration);\
-                \};\
-\
-                onMounted(async () => \{\
-                    const cred = await auth.signInAnonymously();\
-                    myId.value = cred.user.uid;\
-                \});\
-\
-                const enterLobby = () => \{\
-                    view.value = 'lobby';\
-                    db.collection('artifacts').doc(appId).collection('public').doc('data').collection('rooms')\
-                        .where('status', '==', 'waiting')\
-                        .onSnapshot(snap => \{\
-                            rooms.value = snap.docs.map(d => (\{ id: d.id, ...d.data() \}));\
-                        \});\
-                \};\
-\
-                const createRoom = async () => \{\
-                    const rid = 'room_' + Date.now();\
-                    await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('rooms').doc(rid).set(\{\
-                        name: userName.value + ' \uc0\u30340 \u25136 \u23616 ',\
-                        status: 'waiting',\
-                        turn: 0,\
-                        host: myId.value,\
-                        players: [\{\
-                            uid: myId.value, name: userName.value, avatar: selectedAvatar.value,\
-                            money: 30000, pos: 0, lands: [], isBot: false, skipTurns: 0\
-                        \}],\
-                        logs: ['\uc0\u25136 \u39717 \u38283 \u22987 \u65281 ']\
-                    \});\
-                    joinRoom(rid);\
-                \};\
-\
-                const joinRoom = (rid) => \{\
-                    currentRoomId.value = rid;\
-                    db.collection('artifacts').doc(appId).collection('public').doc('data').collection('rooms').doc(rid)\
-                        .onSnapshot(snap => \{\
-                            if (!snap.exists) return;\
-                            const data = snap.data();\
-                            currentRoom.value = data;\
-                            if (data.status === 'playing') view.value = 'game';\
-                            else view.value = 'waiting';\
-\
-                            data.players.forEach(p => \{\
-                                if (!isMoving.value) visualPositions.value[p.uid] = p.pos;\
-                            \});\
-\
-                            const actives = data.players.filter(p => p.money >= 0);\
-                            if (data.status === 'playing' && actives.length === 1 && data.players.length > 1) \{\
-                                winner.value = actives[0];\
-                            \}\
-                        \});\
-                \};\
-\
-                const addBot = async () => \{\
-                    const bot = \{\
-                        uid: 'bot_' + Math.random(),\
-                        name: 'AI \uc0\u23565 \u25163 ',\
-                        avatar: AVATARS[Math.floor(Math.random() * AVATARS.length)],\
-                        money: 30000, pos: 0, lands: [], isBot: true, skipTurns: 0\
-                    \};\
-                    await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('rooms').doc(currentRoomId.value).update(\{\
-                        players: [...currentRoom.value.players, bot]\
-                    \});\
-                \};\
-\
-                const startGame = async () => \{\
-                    await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('rooms').doc(currentRoomId.value).update(\{ status: 'playing' \});\
-                \};\
-\
-                const rollDiceAction = () => \{\
-                    if (rolling.value || isMoving.value) return;\
-                    rolling.value = true;\
-                    playSfx(150, 'square', 0.5);\
-                    setTimeout(() => \{\
-                        dice.value = Math.floor(Math.random() * 6) + 1;\
-                        rolling.value = false;\
-                        movePlayer(dice.value);\
-                    \}, 1000);\
-                \};\
-\
-                const movePlayer = async (steps) => \{\
-                    isMoving.value = true;\
-                    let players = [...currentRoom.value.players];\
-                    let p = players[currentRoom.value.turn];\
-                    \
-                    for (let i = 1; i <= steps; i++) \{\
-                        p.pos = (p.pos + 1) % BOARD.length;\
-                        visualPositions.value[p.uid] = p.pos;\
-                        jumpStates.value[p.uid] = true;\
-                        playSfx(523 + i * 40);\
-                        if (p.pos === 0) \{\
-                            p.money += 2000;\
-                            showMoneyEffect("+2000");\
-                        \}\
-                        await new Promise(r => setTimeout(r, 400));\
-                        jumpStates.value[p.uid] = false;\
-                    \}\
-                    handleTile(p, players);\
-                \};\
-\
-                const handleTile = (p, players) => \{\
-                    const tile = BOARD[p.pos];\
-                    const owner = players.find(pl => pl.lands.some(l => l.id === p.pos));\
-\
-                    if (tile.price && !owner) \{\
-                        if (p.isBot) \{\
-                            if (p.money > tile.price + 5000) \{\
-                                p.money -= tile.price;\
-                                p.lands.push(\{ id: tile.id, lvl: 0 \});\
-                                finishTurn(players, [`\uc0\u55356 \u57312  AI \u36023 \u19979 \u20102  $\{tile.name\}`]);\
-                            \} else finishTurn(players);\
-                        \} else \{\
-                            modal.value = \{ type: 'buy', tile, cost: tile.price, players \};\
-                        \}\
-                    \} else if (owner && owner.uid !== p.uid) \{\
-                        const land = owner.lands.find(l => l.id === p.pos);\
-                        const rent = Math.floor(tile.price * (0.2 + land.lvl * 0.4));\
-                        p.money -= rent;\
-                        owner.money += rent;\
-                        showMoneyEffect("-" + rent);\
-                        finishTurn(players, [`\uc0\u55357 \u56504  $\{p.name\} \u20184 \u31199 \u37329 \u32102  $\{owner.name\}`]);\
-                    \} else finishTurn(players);\
-                \};\
-\
-                const handleAction = (confirm) => \{\
-                    const \{ type, tile, cost, players \} = modal.value;\
-                    const p = players[currentRoom.value.turn];\
-                    if (confirm && p.money >= cost) \{\
-                        p.money -= cost;\
-                        p.lands.push(\{ id: tile.id, lvl: 0 \});\
-                        finishTurn(players, [`\uc0\u10024  $\{p.name\} \u36023 \u19979 \u22320 \u29986 `]);\
-                    \} else finishTurn(players);\
-                    modal.value = null;\
-                \};\
-\
-                const finishTurn = async (newPlayers, logs = []) => \{\
-                    isMoving.value = false;\
-                    const nextTurn = (currentRoom.value.turn + 1) % newPlayers.length;\
-                    await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('rooms').doc(currentRoomId.value).update(\{\
-                        players: newPlayers, turn: nextTurn,\
-                        logs: [...currentRoom.value.logs.slice(-5), ...logs]\
-                    \});\
-                \};\
-\
-                const showMoneyEffect = (amount) => \{\
-                    const id = Date.now();\
-                    moneyParticles.value.push(\{ id, amount, x: 50, y: 50 \});\
-                    setTimeout(() => \{ moneyParticles.value = moneyParticles.value.filter(m => m.id !== id); \}, 1200);\
-                \};\
-\
-                return \{\
-                    view, userName, selectedAvatar, rooms, currentRoom, currentRoomId,\
-                    dice, rolling, visualPositions, jumpStates, moneyParticles, modal, eventToast, winner,\
-                    AVATARS, BOARD, myId,\
-                    getGridStyle: (i) => \{\
-                        if (i <= 10) return \{ gridRow: 9, gridColumn: 11 - i \};\
-                        if (i <= 17) return \{ gridRow: 9 - (i - 10), gridColumn: 1 \};\
-                        if (i <= 28) return \{ gridRow: 1, gridColumn: i - 17 \};\
-                        return \{ gridRow: i - 27, gridColumn: 11 \};\
-                    \},\
-                    getPlayersAt: (i) => currentRoom.value?.players.filter(p => visualPositions.value[p.uid] === i && p.money >= 0) || [],\
-                    getOwner: (i) => currentRoom.value?.players.find(p => p.lands.some(l => l.id === i)),\
-                    getLandLvl: (i) => \{\
-                        const owner = currentRoom.value?.players.find(p => p.lands.some(l => l.id === i));\
-                        return owner?.lands.find(l => l.id === i)?.lvl || 0;\
-                    \},\
-                    roomLogs: computed(() => [...(currentRoom.value?.logs || [])].reverse()),\
-                    isHost: computed(() => currentRoom.value?.host === myId.value),\
-                    canRoll: computed(() => !rolling.value && !isMoving.value && currentRoom.value?.status === 'playing' && currentRoom.value.players[currentRoom.value.turn].uid === myId.value),\
-                    enterLobby, createRoom, joinRoom, addBot, startGame, rollDiceAction, handleAction\
-                \};\
-            \}\
-        \}).mount('#app');\
-    </script>\
-</body>\
-</html>}
+        <!-- 大廳畫面 -->
+        <div v-else-if="view === 'lobby'" class="h-screen p-6 flex flex-col items-center overflow-auto">
+            <div class="max-w-2xl w-full flex justify-between items-center bg-white p-6 rounded-3xl shadow-sm mb-6">
+                <h2 class="text-2xl font-black text-slate-800">遊戲大廳</h2>
+                <button @click="createRoom" class="bg-rose-400 text-white px-8 py-3 rounded-xl font-bold">創建房間</button>
+            </div>
+            <div class="grid grid-cols-1 gap-4 w-full max-w-2xl">
+                <div v-if="rooms.length === 0" class="text-center py-10 text-slate-400 font-bold">目前沒有戰局</div>
+                <div v-for="r in rooms" :key="r.id" @click="joinRoom(r.id)" class="bg-white p-6 rounded-3xl shadow-sm flex justify-between items-center cursor-pointer hover:border-rose-300 border border-transparent transition-all">
+                    <div class="font-bold text-xl">{{ r.name }}</div>
+                    <div class="bg-slate-100 px-4 py-2 rounded-lg text-slate-500 font-bold">進入房間</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 等待畫面 -->
+        <div v-else-if="view === 'waiting'" class="h-screen flex flex-col items-center justify-center p-6">
+            <div class="bg-white p-10 rounded-[40px] shadow-xl w-full max-w-md text-center">
+                <h2 class="text-2xl font-black mb-6">等待開戰...</h2>
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div v-for="p in currentRoom?.players" :key="p.uid" class="bg-slate-50 p-4 rounded-3xl flex flex-col items-center border-2 border-white shadow-sm">
+                        <div class="text-4xl mb-2">{{ p.avatar.emoji }}</div>
+                        <div class="font-bold">{{ p.name }}</div>
+                    </div>
+                    <button v-if="currentRoom?.players.length < 4 && isHost" @click="addBot" class="border-2 border-dashed border-slate-200 rounded-3xl flex items-center justify-center p-4 text-slate-300 font-bold">+ 加入 AI</button>
+                </div>
+                <div class="flex gap-4">
+                    <button @click="view = 'lobby'" class="flex-1 bg-slate-100 text-slate-400 py-4 rounded-2xl font-black">返回</button>
+                    <button v-if="isHost" @click="startGame" class="flex-[2] bg-rose-400 text-white py-4 rounded-2xl font-black shadow-lg">開始遊戲</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 遊戲畫面 -->
+        <div v-else-if="view === 'game'" class="h-screen flex items-center justify-center p-2 relative overflow-hidden">
+            <div v-if="eventToast" class="absolute top-10 left-1/2 -translate-x-1/2 z-[300] bg-rose-500 text-white px-10 py-4 rounded-full shadow-2xl border-4 border-white font-black animate-bounce">{{ eventToast }}</div>
+            
+            <!-- 金錢漂浮特效 -->
+            <div v-for="p in moneyParticles" :key="p.id" class="money-particle" :style="{ left: p.x+'%', top: p.y+'%', color: p.amount.toString().startsWith('-') ? '#FF6B6B' : '#ffd700' }">
+                {{ p.amount }}
+            </div>
+
+            <!-- 勝利畫面 -->
+            <div v-if="winner" class="absolute inset-0 z-[600] bg-black/80 flex flex-col items-center justify-center text-white p-10 animate-popIn">
+                <div class="text-9xl mb-4 animate-bounce">🏆</div>
+                <h1 class="text-6xl font-black mb-2">{{ winner.name }}</h1>
+                <p class="text-2xl font-bold text-rose-400 mb-8">統治了台灣房地產！</p>
+                <button @click="location.reload()" class="bg-rose-400 px-10 py-4 rounded-2xl font-black text-2xl">再玩一局</button>
+            </div>
+
+            <!-- 地圖棋盤 -->
+            <div class="bg-white rounded-[40px] shadow-2xl w-full h-full max-w-[1200px] max-h-[900px] grid grid-cols-11 grid-rows-9 p-2 gap-1 relative border-4 border-white">
+                <div v-for="(tile, i) in BOARD" :key="i" :style="getGridStyle(i)" class="relative border border-slate-100 flex flex-col items-center justify-center rounded-xl overflow-hidden shadow-sm p-1 bg-white">
+                    <div v-if="getOwner(i)" class="absolute bottom-0 inset-x-0 h-1" :style="{backgroundColor: getOwner(i).avatar.color}"></div>
+                    <div v-if="getLandLvl(i) > 0" class="absolute top-1 right-1 text-[10px] bg-white rounded px-1 font-bold shadow-sm">{{ ['🏠','🏘️','🏨'][getLandLvl(i)-1] }}</div>
+                    
+                    <div class="flex flex-col items-center justify-between w-full h-full py-1">
+                        <div class="text-[10px] md:text-[11px] font-black text-slate-800 text-center leading-tight">{{ tile.name }}</div>
+                        <div class="text-xl md:text-2xl my-0.5">{{ tile.icon }}</div>
+                        <div class="h-[12px]"><div v-if="tile.price" class="text-[10px] font-black text-rose-500">${{ tile.price }}</div></div>
+                    </div>
+
+                    <!-- 玩家棋子 -->
+                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-20 flex-wrap gap-0.5">
+                        <div v-for="p in getPlayersAt(i)" :key="p.uid" :class="['w-7 h-7 md:w-9 md:h-9 rounded-full border-2 border-white flex items-center justify-center text-lg shadow-md transition-all duration-300', jumpStates[p.uid] ? 'jump-animation' : '']" :style="{backgroundColor: p.avatar.color}">
+                            {{ p.avatar.emoji }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 中心區域 -->
+                <div class="col-start-2 col-end-11 row-start-2 row-end-9 bg-slate-50/50 rounded-3xl m-1 relative flex items-center justify-center">
+                    <!-- 玩家資訊 -->
+                    <div class="absolute top-6 left-6 space-y-2">
+                        <div v-for="(p, idx) in currentRoom?.players" :key="p.uid" :class="['flex items-center gap-3 p-3 rounded-2xl transition-all', p.money < 0 ? 'opacity-40' : currentRoom.turn === idx ? 'bg-white shadow-xl ring-2 ring-rose-400 scale-105' : 'bg-white/40']">
+                            <div class="text-3xl">{{ p.money < 0 ? '💀' : p.avatar.emoji }}</div>
+                            <div>
+                                <div class="text-[10px] font-black text-slate-500">{{ p.name }}</div>
+                                <div class="font-black text-lg text-rose-500">${{ p.money.toLocaleString() }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 骰子 -->
+                    <div class="flex flex-col items-center">
+                        <div class="dice-container">
+                            <div :class="['dice', rolling ? 'rolling' : '', 'show-' + dice]">
+                                <div class="face front"><div class="dot w-8 h-8 dot-red"></div></div>
+                                <div class="face back"><div class="grid grid-cols-2 gap-4"><div v-for="n in 6" class="dot w-4 h-4 dot-black"></div></div></div>
+                                <div class="face right"><div class="grid grid-cols-2 gap-4"><div v-for="n in 3" class="dot w-4 h-4 dot-black"></div></div></div>
+                                <div class="face left"><div class="grid grid-cols-2 gap-4"><div v-for="n in 4" class="dot w-4 h-4 dot-black"></div></div></div>
+                                <div class="face top"><div class="grid grid-cols-1 gap-4"><div v-for="n in 2" class="dot w-4 h-4 dot-black"></div></div></div>
+                                <div class="face bottom"><div class="grid grid-cols-1 gap-4"><div v-for="n in 5" class="dot w-4 h-4 dot-black"></div></div></div>
+                            </div>
+                        </div>
+                        <button v-if="canRoll" @click="rollDiceAction" class="mt-8 bg-rose-400 text-white px-12 py-4 rounded-full font-black text-xl shadow-xl hover:bg-rose-500 transition-all">擲骰子</button>
+                    </div>
+
+                    <!-- 戰報 -->
+                    <div class="absolute right-6 bottom-6 w-64 bg-white/70 rounded-3xl p-5 shadow-xl border border-white">
+                        <h3 class="text-[10px] font-black text-slate-400 uppercase mb-2">即時戰報</h3>
+                        <div class="space-y-2">
+                            <div v-for="(log, idx) in roomLogs" :key="idx" :class="['text-sm font-bold p-2 rounded-xl', idx === 0 ? 'bg-rose-50 text-rose-600' : 'text-slate-400']">
+                                {{ log }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 互動彈窗 -->
+            <div v-if="modal" class="absolute inset-0 bg-black/40 backdrop-blur-sm z-[500] flex items-center justify-center">
+                <div class="bg-white p-10 rounded-[40px] shadow-2xl text-center max-w-sm w-full animate-popIn">
+                    <div class="text-6xl mb-4">{{ modal.tile.icon }}</div>
+                    <h2 class="text-2xl font-black mb-1">{{ modal.tile.name }}</h2>
+                    <div class="text-3xl font-black text-rose-500 mb-6">${{ modal.cost.toLocaleString() }}</div>
+                    <div class="flex gap-4">
+                        <button @click="handleAction(false)" class="flex-1 py-4 bg-slate-100 rounded-2xl font-black text-slate-400">取消</button>
+                        <button @click="handleAction(true)" class="flex-1 py-4 bg-rose-400 text-white rounded-2xl font-black shadow-lg">確認</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, computed, onMounted } = Vue;
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyC7C... (請更換為你的完整金鑰)", 
+            authDomain: "monopoly-a3597.firebaseapp.com",
+            projectId: "monopoly-a3597",
+            storageBucket: "monopoly-a3597.firebasestorage.app",
+            messagingSenderId: "542718165039",
+            appId: "1:542718165039:web:9b9777926e85bc1389c560",
+            measurementId: "G-6QNS4XW86C"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        const appId = "taiwan-monopoly-final";
+
+        const BOARD = [
+            { id: 0, name: '起點', type: 'start', icon: '🚩' },
+            { id: 1, name: '宜蘭', price: 2000, icon: '🦢' },
+            { id: 2, name: '基隆', price: 1200, icon: '🚢' },
+            { id: 3, name: '台北', price: 6000, icon: '🏢' },
+            { id: 4, name: '新北', price: 2400, icon: '🌉' },
+            { id: 5, name: '桃園', price: 2200, icon: '✈️' },
+            { id: 6, name: '新竹', price: 2000, icon: '🔬' },
+            { id: 7, name: '苗栗', price: 1800, icon: '🍓' },
+            { id: 8, name: '台中', price: 3500, icon: '🥧' },
+            { id: 9, name: '命運', type: 'chance', icon: '❓' },
+            { id: 10, name: '看守所', type: 'jail', icon: '⚖️' },
+            { id: 11, name: '彰化', price: 2000, icon: '⛩️' },
+            { id: 12, name: '南投', price: 1800, icon: '🌲' },
+            { id: 13, name: '機遇', type: 'chance', icon: '✨' },
+            { id: 14, name: '雲林', price: 1600, icon: '🥬' },
+            { id: 15, name: '嘉義', price: 1800, icon: '🐔' },
+            { id: 16, name: '台南', price: 3000, icon: '🏯' },
+            { id: 17, name: '台鐵', price: 3000, icon: '🚆' },
+            { id: 18, name: '休息站', type: 'rest', icon: '☕' },
+            { id: 19, name: '高雄', price: 4000, icon: '⚓' },
+            { id: 20, name: '屏東', price: 1600, icon: '🍍' },
+            { id: 21, name: '台東', price: 2000, icon: '🎈' },
+            { id: 22, name: '花蓮', price: 2200, icon: '🖼️' },
+            { id: 23, name: '澎湖', price: 1500, icon: '🌊' },
+            { id: 24, name: '金門', price: 1500, icon: '🔪' },
+            { id: 25, name: '馬祖', price: 1200, icon: '🪨' },
+            { id: 26, name: '命運', type: 'chance', icon: '❓' },
+            { id: 27, name: '稅收', type: 'tax', icon: '💸' },
+            { id: 28, name: '監獄', type: 'jail', icon: '👮' },
+            { id: 29, name: '101', price: 9000, icon: '💎' },
+            { id: 30, name: '機遇', type: 'chance', icon: '✨' },
+            { id: 31, name: '總統府', price: 10000, icon: '🏛️' },
+            { id: 32, name: '中央銀行', type: 'bank', icon: '🏦' },
+            { id: 33, name: '命運', type: 'chance', icon: '❓' },
+            { id: 34, name: '機遇', type: 'chance', icon: '✨' },
+            { id: 35, name: '豪宅', price: 8000, icon: '🏰' },
+        ];
+
+        const AVATARS = [
+            { id: 'dog', emoji: '🐶', color: '#FF9F43' }, { id: 'cat', emoji: '🐱', color: '#54A0FF' },
+            { id: 'lion', emoji: '🦁', color: '#FF6B6B' }, { id: 'penguin', emoji: '🐧', color: '#1DD1A1' },
+            { id: 'fox', emoji: '🦊', color: '#FFA502' }, { id: 'koala', emoji: '🐨', color: '#A4B0BE' },
+            { id: 'rabbit', emoji: '🐰', color: '#FF9FF3' }, { id: 'panda', emoji: '🐼', color: '#2F3542' }
+        ];
+
+        createApp({
+            setup() {
+                const view = ref('login');
+                const userName = ref('杰哥');
+                const selectedAvatar = ref(AVATARS[0]);
+                const myId = ref('');
+                const rooms = ref([]);
+                const currentRoomId = ref('');
+                const currentRoom = ref(null);
+                const dice = ref(1);
+                const rolling = ref(false);
+                const isMoving = ref(false);
+                const visualPositions = ref({});
+                const jumpStates = ref({});
+                const moneyParticles = ref([]);
+                const modal = ref(null);
+                const eventToast = ref(null);
+                const winner = ref(null);
+
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const playSfx = (freq, type = 'sine', duration = 0.1) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.start(); osc.stop(audioCtx.currentTime + duration);
+                };
+
+                onMounted(async () => {
+                    const cred = await auth.signInAnonymously();
+                    myId.value = cred.user.uid;
+                });
+
+                const enterLobby = () => {
+                    view.value = 'lobby';
+                    db.collection('artifacts').doc(appId).collection('public').doc('data').collection('rooms')
+                        .where('status', '==', 'waiting')
+                        .onSnapshot(snap => {
+                            rooms.value = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                        });
+                };
+
+                const createRoom = async () => {
+                    const rid = 'room_' + Date.now();
+                    await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('rooms').doc(rid).set({
+                        name: userName.value + ' 的戰局',
+                        status: 'waiting',
+                        turn: 0,
+                        host: myId.value,
+                        players: [{
+                            uid: myId.value, name: userName.value, avatar: selectedAvatar.value,
+                            money: 30000, pos: 0, lands: [], isBot: false, skipTurns: 0
+                        }],
+                        logs: ['戰鬥開始！']
+                    });
+                    joinRoom(rid);
+                };
+
+                const joinRoom = (rid) => {
+                    currentRoomId.value = rid;
+                    db.collection('artifacts').doc(appId).collection('public').doc('data').collection('rooms').doc(rid)
+                        .onSnapshot(snap => {
+                            if (!snap.exists) return;
+                            const data = snap.data();
+                            currentRoom.value = data;
+                            if (data.status === 'playing') view.value = 'game';
+                            else view.value = 'waiting';
+
+                            data.players.forEach(p => {
+                                if (!isMoving.value) visualPositions.value[p.uid] = p.pos;
+                            });
+
+                            const actives = data.players.filter(p => p.money >= 0);
+                            if (data.status === 'playing' && actives.length === 1 && data.players.length > 1) {
+                                winner.value = actives[0];
+                            }
+                        });
+                };
+
+                const addBot = async () => {
+                    const bot = {
+                        uid: 'bot_' + Math.random(),
+                        name: 'AI 對手',
+                        avatar: AVATARS[Math.floor(Math.random() * AVATARS.length)],
+                        money: 30000, pos: 0, lands: [], isBot: true, skipTurns: 0
+                    };
+                    await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('rooms').doc(currentRoomId.value).update({
+                        players: [...currentRoom.value.players, bot]
+                    });
+                };
+
+                const startGame = async () => {
+                    await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('rooms').doc(currentRoomId.value).update({ status: 'playing' });
+                };
+
+                const rollDiceAction = () => {
+                    if (rolling.value || isMoving.value) return;
+                    rolling.value = true;
+                    playSfx(150, 'square', 0.5);
+                    setTimeout(() => {
+                        dice.value = Math.floor(Math.random() * 6) + 1;
+                        rolling.value = false;
+                        movePlayer(dice.value);
+                    }, 1000);
+                };
+
+                const movePlayer = async (steps) => {
+                    isMoving.value = true;
+                    let players = [...currentRoom.value.players];
+                    let p = players[currentRoom.value.turn];
+                    
+                    for (let i = 1; i <= steps; i++) {
+                        p.pos = (p.pos + 1) % BOARD.length;
+                        visualPositions.value[p.uid] = p.pos;
+                        jumpStates.value[p.uid] = true;
+                        playSfx(523 + i * 40);
+                        if (p.pos === 0) {
+                            p.money += 2000;
+                            showMoneyEffect("+2000");
+                        }
+                        await new Promise(r => setTimeout(r, 400));
+                        jumpStates.value[p.uid] = false;
+                    }
+                    handleTile(p, players);
+                };
+
+                const handleTile = (p, players) => {
+                    const tile = BOARD[p.pos];
+                    const owner = players.find(pl => pl.lands.some(l => l.id === p.pos));
+
+                    if (tile.price && !owner) {
+                        if (p.isBot) {
+                            if (p.money > tile.price + 5000) {
+                                p.money -= tile.price;
+                                p.lands.push({ id: tile.id, lvl: 0 });
+                                finishTurn(players, [`🏠 AI 買下了 ${tile.name}`]);
+                            } else finishTurn(players);
+                        } else {
+                            modal.value = { type: 'buy', tile, cost: tile.price, players };
+                        }
+                    } else if (owner && owner.uid !== p.uid) {
+                        const land = owner.lands.find(l => l.id === p.pos);
+                        const rent = Math.floor(tile.price * (0.2 + land.lvl * 0.4));
+                        p.money -= rent;
+                        owner.money += rent;
+                        showMoneyEffect("-" + rent);
+                        finishTurn(players, [`💸 ${p.name} 付租金給 ${owner.name}`]);
+                    } else finishTurn(players);
+                };
+
+                const handleAction = (confirm) => {
+                    const { type, tile, cost, players } = modal.value;
+                    const p = players[currentRoom.value.turn];
+                    if (confirm && p.money >= cost) {
+                        p.money -= cost;
+                        p.lands.push({ id: tile.id, lvl: 0 });
+                        finishTurn(players, [`✨ ${p.name} 買下地產`]);
+                    } else finishTurn(players);
+                    modal.value = null;
+                };
+
+                const finishTurn = async (newPlayers, logs = []) => {
+                    isMoving.value = false;
+                    const nextTurn = (currentRoom.value.turn + 1) % newPlayers.length;
+                    await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('rooms').doc(currentRoomId.value).update({
+                        players: newPlayers, turn: nextTurn,
+                        logs: [...currentRoom.value.logs.slice(-5), ...logs]
+                    });
+                };
+
+                const showMoneyEffect = (amount) => {
+                    const id = Date.now();
+                    moneyParticles.value.push({ id, amount, x: 50, y: 50 });
+                    setTimeout(() => { moneyParticles.value = moneyParticles.value.filter(m => m.id !== id); }, 1200);
+                };
+
+                return {
+                    view, userName, selectedAvatar, rooms, currentRoom, currentRoomId,
+                    dice, rolling, visualPositions, jumpStates, moneyParticles, modal, eventToast, winner,
+                    AVATARS, BOARD, myId,
+                    getGridStyle: (i) => {
+                        if (i <= 10) return { gridRow: 9, gridColumn: 11 - i };
+                        if (i <= 17) return { gridRow: 9 - (i - 10), gridColumn: 1 };
+                        if (i <= 28) return { gridRow: 1, gridColumn: i - 17 };
+                        return { gridRow: i - 27, gridColumn: 11 };
+                    },
+                    getPlayersAt: (i) => currentRoom.value?.players.filter(p => visualPositions.value[p.uid] === i && p.money >= 0) || [],
+                    getOwner: (i) => currentRoom.value?.players.find(p => p.lands.some(l => l.id === i)),
+                    getLandLvl: (i) => {
+                        const owner = currentRoom.value?.players.find(p => p.lands.some(l => l.id === i));
+                        return owner?.lands.find(l => l.id === i)?.lvl || 0;
+                    },
+                    roomLogs: computed(() => [...(currentRoom.value?.logs || [])].reverse()),
+                    isHost: computed(() => currentRoom.value?.host === myId.value),
+                    canRoll: computed(() => !rolling.value && !isMoving.value && currentRoom.value?.status === 'playing' && currentRoom.value.players[currentRoom.value.turn].uid === myId.value),
+                    enterLobby, createRoom, joinRoom, addBot, startGame, rollDiceAction, handleAction
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
