@@ -1,645 +1,220 @@
-<!DOCTYPE html>
+# 定義 HTML 內容
+html_v21_content = """<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>玩玩大富翁 杰哥版 V21</title>
+    <title>玩玩大富翁 V21 - GitHub 專用版</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
-        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f1f5f9; margin: 0; overflow: hidden; color: #334155; }
-        
-        .board-wrapper {
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #0f172a;
+        }
+        .game-board {
             display: grid;
             grid-template-columns: repeat(11, 1fr);
-            grid-template-rows: repeat(6, 1fr);
-            width: 100vw;
-            height: 100vh;
+            grid-template-rows: repeat(11, 1fr);
             gap: 2px;
-            padding: 10px;
-            background: #cbd5e1;
-            box-sizing: border-box;
+            width: 100%;
+            height: 100%;
+            background-color: #334155;
+            border: 4px solid #1e293b;
         }
-
-        .tile {
-            background: #ffffff;
-            position: relative;
+        .cell {
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            transition: background-color 0.3s ease;
-            border-radius: 4px;
-        }
-
-        .owner-0 { background-color: #fee2e2 !important; border: 2px solid #f87171; }
-        .owner-1 { background-color: #e0f2fe !important; border: 2px solid #60a5fa; }
-        .owner-2 { background-color: #fef9c3 !important; border: 2px solid #facc15; }
-        .owner-3 { background-color: #f0fdf4 !important; border: 2px solid #4ade80; }
-
-        .tile-price { font-size: 0.65rem; font-weight: 800; color: #ef4444; position: absolute; top: 4px; }
-        .tile-icon { font-size: 1.6rem; z-index: 10; }
-        .tile-name { font-weight: 900; font-size: 0.8rem; color: #475569; z-index: 10; }
-        
-        .building-marker { position: absolute; bottom: 4px; right: 4px; font-size: 1rem; }
-
-        .token-color-0 { color: #ef4444; }
-        .token-color-1 { color: #3b82f6; }
-        .token-color-2 { color: #eab308; }
-        .token-color-3 { color: #22c55e; }
-
-        .player-token {
-            z-index: 50;
-            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
-            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-            position: absolute;
-            font-size: 3.5rem;
-            pointer-events: none;
-        }
-
-        .center-area {
-            grid-column: 2 / 11;
-            grid-row: 2 / 6;
-            background: #ffffff; 
-            margin: 10px;
-            border-radius: 30px;
-            display: flex;
-            padding: 30px;
-            gap: 20px;
-            box-shadow: 0 15px 30px rgba(0,0,0,0.05);
-            border: 1px solid #e2e8f0;
-        }
-
-        .player-card {
-            padding: 10px 14px;
-            border-radius: 18px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            transition: all 0.3s ease;
-        }
-        .player-card.active {
-            background: #f8fafc;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            ring: 2px solid #3b82f6;
-            transform: scale(1.02);
-        }
-        .player-card.bankrupt {
-            filter: grayscale(1) opacity(0.5);
-            background: #f1f5f9;
-        }
-        .player-avatar-box { font-size: 2.5rem; }
-        .player-name-text { font-size: 0.85rem; font-weight: 900; color: #94a3b8; }
-        .player-cash-text { font-size: 1.25rem; font-weight: 900; color: #2563eb; line-height: 1.2; }
-        .player-jail-text { font-size: 0.9rem; font-weight: 900; font-style: italic; color: #ef4444; }
-
-        /* 骰子加大 */
-        .dice-box { perspective: 500px; width: 100px; height: 100px; margin-bottom: 35px; }
-        .dice { 
-            width: 100%; height: 100%; position: relative; transform-style: preserve-3d; 
-            transition: transform 1s cubic-bezier(0.2, 0.8, 0.3, 1.2); 
-        }
-        .dice-face {
-            position: absolute; width: 100px; height: 100px; background: white;
-            border: 3px solid #e2e8f0; border-radius: 20px; display: flex; align-items: center; justify-content: center;
-            backface-visibility: hidden; box-shadow: inset 0 0 15px rgba(0,0,0,0.05);
-        }
-        .face-1 { transform: translateZ(50px); }
-        .face-6 { transform: rotateX(180deg) translateZ(50px); }
-        .face-2 { transform: rotateX(90deg) translateZ(50px); }
-        .face-5 { transform: rotateX(-90deg) translateZ(50px); }
-        .face-3 { transform: rotateY(90deg) translateZ(50px); }
-        .face-4 { transform: rotateY(-90deg) translateZ(50px); }
-        .dot { background: #334155; border-radius: 50%; }
-        .dot.red { background: #ef4444; }
-
-        /* 按鈕微調小一點點 */
-        .fancy-roll-btn {
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            color: white;
-            padding: 1rem 3rem;
-            font-size: 1.25rem;
-            font-weight: 900;
-            border-radius: 9999px;
-            box-shadow: 0 10px 20px -5px rgba(15, 23, 42, 0.4), 0 0 12px rgba(59, 130, 246, 0.4);
-            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-size: 0.65rem;
+            font-weight: bold;
             position: relative;
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            font-style: italic;
+            color: #1e293b;
         }
-        .fancy-roll-btn:hover:not(:disabled) {
-            transform: translateY(-2px) scale(1.03);
-            box-shadow: 0 12px 25px -5px rgba(15, 23, 42, 0.5), 0 0 18px rgba(59, 130, 246, 0.5);
-        }
-        .fancy-roll-btn::after {
-            content: ''; position: absolute; top: -50%; left: -100%; width: 200%; height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
-            transform: rotate(45deg); animation: shine 3s infinite;
-        }
-        @keyframes shine { 0% { left: -100%; } 100% { left: 100%; } }
-
-        .log-latest { color: #dc2626; font-weight: 900; background: #fff1f2; border-radius: 15px; padding: 15px; border-left: 6px solid #ef4444; font-size: 1rem; margin-bottom: 10px; animation: pulseRed 1.5s infinite; }
-        @keyframes pulseRed { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
-        .log-item { font-size: 0.85rem; color: #64748b; padding: 6px 10px; border-bottom: 1px solid #f1f5f9; }
-
-        .modal-overlay {
-            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(8px);
-            display: flex; align-items: center; justify-content: center; z-index: 100;
+        .player-token {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid white;
+            position: absolute;
+            z-index: 10;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 8px rgba(0,0,0,0.3);
         }
     </style>
 </head>
-<body>
-    <div id="app" class="w-screen h-screen"></div>
+<body class="text-slate-200 min-h-screen flex flex-col items-center p-4">
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, updateDoc, collection, query, getDocs, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <header class="mb-8 text-center">
+        <h1 class="text-4xl font-black text-white flex items-center justify-center gap-3">
+            <i data-lucide="dices" class="text-sky-500 w-10 h-10"></i>
+            玩玩大富翁 <span class="text-sky-500">V21</span>
+        </h1>
+        <p class="text-slate-500 font-mono mt-2 uppercase tracking-widest text-sm">穩定版 | GitHub Pages Ready</p>
+    </header>
 
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        let audioCtx = null;
-        const playTone = (freq, type, duration, vol=0.1) => {
-            if(!audioCtx) audioCtx = new AudioCtx();
-            const osc = audioCtx.createOscillator();
-            const g = audioCtx.createGain();
-            osc.type = type;
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            g.gain.setValueAtTime(vol, audioCtx.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
-            osc.connect(g);
-            g.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + duration);
-        };
-
-        const sounds = {
-            dice: () => playTone(350, 'square', 0.1),
-            buy: () => { playTone(523, 'sine', 0.15); setTimeout(()=>playTone(659, 'sine', 0.2), 100); },
-            pay: () => playTone(200, 'sawtooth', 0.3),
-            move: () => playTone(450, 'triangle', 0.05),
-            special: () => { playTone(880, 'sine', 0.1); setTimeout(()=>playTone(1100, 'sine', 0.2), 150); }
-        };
-
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'taiwan-monopoly-jeff-v21';
-
-        let user = null;
-        let roomData = null;
-        let roomId = null;
-        let view = 'LOGIN'; 
-        let playerName = "杰哥";
-        let roomNameInput = "杰哥的發財房";
-        let selectedAvatar = '🐭';
-        const CHESS_PIECES = ['🐭', '🐮', '🐯', '🐰', '🐲', '🐍', '🐴', '🐑', '🐵', '🐔', '🐶', '🐷'];
+    <main class="flex flex-col lg:flex-row gap-8 items-start justify-center w-full max-w-6xl">
         
-        let availableRooms = [];
-        let isMoving = false;
-        let showModal = null; 
-        let unsubscribeRoom = null;
-
-        const TILES = [
-            { id: 0, name: "起點", type: "START", icon: "🏁" },
-            { id: 1, name: "宜蘭", type: "LAND", price: 2000, icon: "🦢" },
-            { id: 2, name: "基隆", type: "LAND", price: 1500, icon: "🚢" },
-            { id: 3, name: "台北", type: "LAND", price: 8500, icon: "🏢" },
-            { id: 4, name: "新北", type: "LAND", price: 3200, icon: "🌉" },
-            { id: 5, name: "桃園", type: "LAND", price: 2800, icon: "✈️" },
-            { id: 6, name: "機遇", type: "CHANCE", icon: "✨" },
-            { id: 7, name: "新竹", type: "LAND", price: 4200, icon: "🔌" },
-            { id: 8, name: "苗栗", type: "LAND", price: 2000, icon: "🍓" },
-            { id: 9, name: "台中", type: "LAND", price: 4800, icon: "🥧" },
-            { id: 10, name: "看守所", type: "JAIL", icon: "⚖️" },
-            { id: 11, name: "彰化", type: "LAND", price: 2400, icon: "⛩️" },
-            { id: 12, name: "南投", type: "LAND", price: 2200, icon: "🌲" },
-            { id: 13, name: "雲林", type: "LAND", price: 1800, icon: "🥬" },
-            { id: 14, name: "嘉義", type: "LAND", price: 2000, icon: "🐔" },
-            { id: 15, name: "台南", type: "LAND", price: 3800, icon: "🏯" },
-            { id: 16, name: "高雄", type: "LAND", price: 5000, icon: "⚓" },
-            { id: 17, name: "屏東", type: "LAND", price: 2200, icon: "🍍" },
-            { id: 18, name: "命運", type: "CHANCE", icon: "❓" },
-            { id: 19, name: "台東", type: "LAND", price: 2400, icon: "🎈" },
-            { id: 20, name: "花蓮", type: "LAND", price: 2800, icon: "🖼️" },
-            { id: 21, name: "澎湖", type: "LAND", price: 1800, icon: "🌊" },
-            { id: 22, name: "金門", type: "LAND", price: 1800, icon: "🔪" },
-            { id: 23, name: "重案組", type: "JAIL", icon: "👮" },
-            { id: 24, name: "所得稅", type: "TAX", icon: "💸" },
-            { id: 25, name: "101", type: "LAND", price: 9500, icon: "💎" },
-            { id: 26, name: "總統府", type: "LAND", price: 12000, icon: "🏛️" },
-            { id: 27, name: "央行", type: "LAND", price: 9000, icon: "🏦" },
-            { id: 28, name: "消費稅", type: "TAX", icon: "💸" },
-            { id: 29, name: "帝寶", type: "LAND", price: 8800, icon: "🏰" },
-        ];
-
-        const AI_LIST = ["周杰倫", "蔡依林", "林俊傑", "劉德華", "蕭敬騰", "伍佰", "張惠妹", "羅志祥"];
-        const COLORS = ["owner-0", "owner-1", "owner-2", "owner-3"];
-        const TOKEN_COLORS = ["token-color-0", "token-color-1", "token-color-2", "token-color-3"];
-
-        function getPos(idx) {
-            if (idx <= 10) return { r: 6, c: 11 - idx };
-            if (idx <= 14) return { r: 6 - (idx - 10), c: 1 };
-            if (idx <= 25) return { r: 1, c: idx - 14 };
-            return { r: 1 + (idx - 25), c: 11 };
-        }
-
-        window.render = () => {
-            const root = document.getElementById('app');
-            if (view === 'LOGIN') {
-                root.innerHTML = `
-                    <div class="flex items-center justify-center h-full">
-                        <div class="bg-white p-12 rounded-[40px] shadow-2xl w-[400px] text-center">
-                            <h1 class="text-4xl font-black mb-8 text-slate-800 italic">玩玩<br>大富翁</h1>
-                            <div class="text-left mb-2 text-xs font-bold text-slate-400">你的大名:</div>
-                            <input id="pname" class="w-full bg-slate-50 border-none rounded-2xl p-4 mb-6 font-bold text-center text-lg focus:ring-2 ring-blue-400" value="${playerName}">
-                            <div class="text-left mb-2 text-xs font-bold text-slate-400">選擇棋子 (生肖):</div>
-                            <div class="grid grid-cols-4 gap-2 mb-8">
-                                ${CHESS_PIECES.map(e => `<button onclick="window.setAvatar('${e}')" class="text-3xl p-3 rounded-2xl transition-all ${selectedAvatar === e ? 'bg-blue-500 text-white scale-110 shadow-lg' : 'bg-slate-50 opacity-30'}">${e}</button>`).join('')}
-                            </div>
-                            <button onclick="window.toLobby()" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-xl hover:bg-slate-800 transition-all">進入大廳</button>
-                        </div>
-                    </div>
-                `;
-                document.getElementById('pname').oninput = (e) => playerName = e.target.value;
-            } else if (view === 'LOBBY') {
-                root.innerHTML = `
-                    <div class="flex items-center justify-center h-full">
-                        <div class="bg-white p-10 rounded-[40px] shadow-2xl w-[450px]">
-                            <h2 class="text-2xl font-black mb-6 text-slate-800 italic">戰局大廳</h2>
-                            <div class="bg-slate-50 p-6 rounded-3xl mb-8">
-                                <input id="rname" class="w-full bg-white border-none rounded-xl p-3 mb-4 font-bold" value="${roomNameInput}">
-                                <button onclick="window.createRoom()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-black text-lg shadow-lg">創立戰局</button>
-                            </div>
-                            <div class="space-y-3 max-h-48 overflow-y-auto">
-                                ${availableRooms.map(r => `
-                                    <div class="flex justify-between items-center p-5 bg-slate-100 rounded-2xl cursor-pointer hover:ring-2 ring-blue-400" onclick="window.joinRoom('${r.id}')">
-                                        <div class="font-black text-slate-700">${r.title}</div>
-                                        <span class="bg-white text-blue-600 px-4 py-1 rounded-full font-black text-xs">${r.players.length}/4</span>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                    </div>
-                `;
-                document.getElementById('rname').oninput = (e) => roomNameInput = e.target.value;
-            } else if (view === 'ROOM') {
-                root.innerHTML = `
-                    <div class="flex items-center justify-center h-full">
-                        <div class="bg-white p-10 rounded-[40px] shadow-2xl w-96 text-center">
-                            <h2 class="text-2xl font-black mb-1 text-slate-800">${roomData.title}</h2>
-                            <div class="grid grid-cols-2 gap-4 mb-8 mt-8">
-                                ${roomData.players.map((p, i) => `
-                                    <div class="p-5 bg-slate-50 rounded-3xl border-2 ${COLORS[i].replace('owner-','border-')}">
-                                        <div class="text-5xl mb-2 ${TOKEN_COLORS[i]}">${p.avatar}</div>
-                                        <div class="font-black text-slate-700 truncate">${p.name}</div>
-                                    </div>
-                                `).join('')}
-                            </div>
-                            ${user.uid === roomData.hostId ? `
-                                <button onclick="window.addAI()" class="w-full mb-3 bg-slate-100 py-3 rounded-xl font-black text-slate-500">邀請藝人</button>
-                                <button onclick="window.startGame()" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-xl shadow-xl">正式開戰</button>
-                            ` : '<div class="p-4 bg-yellow-50 text-yellow-600 rounded-2xl font-black animate-pulse">等待房主...</div>'}
-                        </div>
-                    </div>
-                `;
-            } else if (view === 'GAME' && roomData) {
-                renderGame(root);
-            }
-        };
-
-        function renderGame(root) {
-            const currentP = roomData.players[roomData.currentPlayerIdx];
-            const isMyTurn = currentP.uid === user.uid;
-
-            if (currentP.isBankrupt) {
-                if (user.uid === roomData.hostId) {
-                    setTimeout(() => {
-                        updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId), {
-                            currentPlayerIdx: (roomData.currentPlayerIdx + 1) % roomData.players.length
-                        });
-                    }, 500);
-                }
-                return;
-            }
-
-            if (currentP.jailTurns > 0) {
-                if (isMyTurn || (currentP.isAI && user.uid === roomData.hostId)) {
-                    setTimeout(() => { window.skipJail(); }, 1000);
-                }
-            }
-
-            root.innerHTML = `
-                <div class="board-wrapper">
-                    ${TILES.map((t, i) => {
-                        const {r, c} = getPos(i);
-                        const ownerIdx = roomData.players.findIndex(p => !p.isBankrupt && p.properties.some(prop => prop.id === t.id));
-                        const propData = ownerIdx !== -1 ? roomData.players[ownerIdx].properties.find(p => p.id === t.id) : null;
-                        const ownerClass = ownerIdx !== -1 ? COLORS[ownerIdx] : '';
-                        
-                        return `
-                            <div class="tile ${ownerClass}" style="grid-row: ${r}; grid-column: ${c};">
-                                <div class="tile-price">${t.type === 'LAND' ? `$${t.price}` : ''}</div>
-                                <div class="tile-icon">${t.icon}</div>
-                                <div class="tile-name">${t.name}</div>
-                                ${propData && propData.level > 0 ? `<div class="building-marker">${propData.level === 1 ? '🏡' : '🏙️'}</div>` : ''}
-                                ${roomData.players.filter(p => p.pos === i && !p.isBankrupt).map(p => {
-                                    const pIdx = roomData.players.indexOf(p);
-                                    return `<div class="player-token ${TOKEN_COLORS[pIdx]}" style="z-index:${p.uid === currentP.uid ? 60 : 50}">${p.avatar}</div>`;
-                                }).join('')}
-                            </div>
-                        `;
-                    }).join('')}
-
-                    <div class="center-area">
-                        <div class="w-1/4 flex flex-col gap-2 overflow-y-auto pr-2">
-                            ${roomData.players.map((p, idx) => `
-                                <div class="player-card ${roomData.currentPlayerIdx === idx ? 'active' : ''} ${p.isBankrupt ? 'bankrupt' : ''}">
-                                    <div class="player-avatar-box transition-transform ${TOKEN_COLORS[idx]} ${roomData.currentPlayerIdx === idx ? 'scale-110' : ''}">${p.avatar}</div>
-                                    <div class="min-w-0">
-                                        <div class="player-name-text truncate">${p.name}${p.isBankrupt ? ' (破產)' : ''}</div>
-                                        <div class="player-cash-text">${p.isBankrupt ? 'OUT' : '$'+p.cash}</div>
-                                        ${p.jailTurns > 0 ? `<div class="player-jail-text">禁閉中 (${p.jailTurns})</div>` : ''}
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                        
-                        <div class="flex-1 flex flex-col items-center justify-center border-x border-slate-100 px-6">
-                            <div class="dice-box">
-                                <div class="dice" id="dice">
-                                    <div class="dice-face face-1"><div class="w-6 h-6 dot red"></div></div>
-                                    <div class="dice-face face-6"><div class="grid grid-cols-2 gap-3"><div class="w-4 h-4 dot"></div><div class="w-4 h-4 dot"></div><div class="w-4 h-4 dot"></div><div class="w-4 h-4 dot"></div><div class="w-4 h-4 dot"></div><div class="w-4 h-4 dot"></div></div></div>
-                                    <div class="dice-face face-2"><div class="w-4 h-4 dot absolute top-4 left-4"></div><div class="w-4 h-4 dot absolute bottom-4 right-4"></div></div>
-                                    <div class="dice-face face-5"><div class="w-4 h-4 dot absolute top-4 left-4"></div><div class="w-4 h-4 dot absolute top-4 right-4"></div><div class="w-4 h-4 dot"></div><div class="w-4 h-4 dot absolute bottom-4 left-4"></div><div class="w-4 h-4 dot absolute bottom-4 right-4"></div></div>
-                                    <div class="dice-face face-3"><div class="w-4 h-4 dot absolute top-4 left-4"></div><div class="w-4 h-4 dot"></div><div class="w-4 h-4 dot absolute bottom-4 right-4"></div></div>
-                                    <div class="dice-face face-4"><div class="w-4 h-4 dot absolute top-4 left-4"></div><div class="w-4 h-4 dot absolute top-4 right-4"></div><div class="w-4 h-4 dot absolute bottom-4 left-4"></div><div class="w-4 h-4 dot absolute bottom-4 right-4"></div></div>
-                                </div>
-                            </div>
-                            <button id="rollBtn" onclick="window.roll()" ${isMyTurn && !isMoving && !showModal && currentP.jailTurns === 0 ? '' : 'disabled'} class="fancy-roll-btn">
-                                ${currentP.jailTurns > 0 ? '禁閉中' : (isMyTurn ? '擲骰子' : '等待中')}
-                            </button>
-                        </div>
-
-                        <div class="w-1/3 flex flex-col overflow-hidden">
-                            <div class="flex-1 overflow-y-auto">
-                                ${roomData.logs.map((l, i) => `
-                                    <div class="${i === 0 ? 'log-latest' : 'log-item'}">${l}</div>
-                                `).join('')}
-                            </div>
-                        </div>
-                    </div>
+        <div class="relative w-full max-w-[500px] aspect-square bg-slate-800 p-2 rounded-xl shadow-2xl overflow-hidden border-4 border-slate-700">
+            <div id="board" class="game-board">
                 </div>
+        </div>
 
-                ${showModal ? renderModal() : ''}
-            `;
-
-            if (currentP.isAI && !isMoving && !showModal && currentP.jailTurns === 0 && !currentP.isBankrupt) {
-                setTimeout(() => {
-                    const currentU = roomData.players[roomData.currentPlayerIdx]?.uid;
-                    if (currentP.uid === currentU) window.roll();
-                }, 1500);
-            }
-        }
-
-        function renderModal() {
-            const { type, data } = showModal;
-            if (type === 'BUY') {
-                return `
-                    <div class="modal-overlay">
-                        <div class="bg-white p-10 rounded-[40px] text-center shadow-2xl w-80 scale-110">
-                            <div class="text-6xl mb-4 animate-bounce">${data.icon}</div>
-                            <h2 class="text-2xl font-black text-slate-800 mb-1">${data.name}</h2>
-                            <p class="text-red-500 font-black text-xl mb-8">$${data.price}</p>
-                            <div class="grid grid-cols-2 gap-4">
-                                <button onclick="window.confirmBuy(false)" class="bg-slate-100 py-4 rounded-2xl font-bold text-slate-500">不用</button>
-                                <button onclick="window.confirmBuy(true)" class="bg-blue-600 text-white py-4 rounded-2xl font-black shadow-lg">購買</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-            if (type === 'BUILD') {
-                const nextLevel = data.level + 1;
-                const cost = Math.floor(TILES[data.id].price * 0.8);
-                return `
-                    <div class="modal-overlay">
-                        <div class="bg-white p-10 rounded-[40px] text-center shadow-2xl w-80 scale-110">
-                            <div class="text-6xl mb-4">${nextLevel === 1 ? '🏡' : '🏙️'}</div>
-                            <h2 class="text-2xl font-black text-slate-800 mb-1">建設 ${data.name}</h2>
-                            <p class="text-green-600 font-black text-xl mb-8">建設費: $${cost}</p>
-                            <div class="grid grid-cols-2 gap-4">
-                                <button onclick="window.confirmBuild(false)" class="bg-slate-100 py-4 rounded-2xl font-bold text-slate-500">稍後</button>
-                                <button onclick="window.confirmBuild(true)" class="bg-green-600 text-white py-4 rounded-2xl font-black shadow-lg">升級</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-            if (type === 'SPECIAL') {
-                return `
-                    <div class="modal-overlay" onclick="window.closeSpecial()">
-                        <div class="bg-white p-10 rounded-[40px] text-center max-w-sm shadow-2xl">
-                            <div class="text-8xl mb-6">${data.icon}</div>
-                            <h2 class="text-3xl font-black text-slate-800 mb-2">${data.title}</h2>
-                            <p class="text-slate-500 mb-8 font-bold">${data.desc}</p>
-                            <button class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-lg">知道了</button>
-                        </div>
-                    </div>
-                `;
-            }
-            return '';
-        }
-
-        window.setAvatar = (e) => { selectedAvatar = e; window.render(); };
-        window.toLobby = () => { view = 'LOBBY'; window.fetchRooms(); };
-        
-        window.fetchRooms = async () => {
-            const snap = await getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'rooms')));
-            availableRooms = snap.docs.map(d => d.data()).filter(r => r.status === 'WAITING');
-            window.render();
-        };
-
-        window.createRoom = async () => {
-            const rid = Math.random().toString(36).substring(7).toUpperCase();
-            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', rid), {
-                id: rid, title: roomNameInput, hostId: user.uid, hostName: playerName,
-                status: 'WAITING', players: [], currentPlayerIdx: 0, logs: ["歡迎來到玩玩大富翁！"], createdAt: Date.now()
-            });
-            window.fetchRooms();
-        };
-
-        window.joinRoom = async (rid) => {
-            roomId = rid;
-            const snap = await getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'rooms')));
-            const target = snap.docs.find(d => d.id === rid)?.data();
+        <div class="flex flex-col gap-6 w-full max-w-sm">
             
-            if (target && !target.players.some(p => p.uid === user.uid)) {
-                // 每人 5 萬元初始資金
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', rid), {
-                    players: arrayUnion({ uid: user.uid, name: playerName, avatar: selectedAvatar, cash: 50000, pos: 0, properties: [], isAI: false, jailTurns: 0, isBankrupt: false })
-                });
-            }
-            view = 'ROOM'; listen(rid);
-        };
+            <div id="p1-card" class="bg-slate-800 p-5 rounded-2xl border-l-8 border-red-500 shadow-lg transition-all duration-300">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="user" class="text-red-500"></i>
+                        <span class="text-xl font-bold">杰哥 (P1)</span>
+                    </div>
+                    <span id="p1-money" class="text-2xl font-black text-yellow-400 font-mono">$15,000</span>
+                </div>
+            </div>
 
-        window.addAI = () => {
-            if (roomData.players.length >= 4) return;
-            const usedAvatars = roomData.players.map(p => p.avatar);
-            const aiAvatar = CHESS_PIECES.find(a => !usedAvatars.includes(a)) || '🤖';
-            const ai = { 
-                uid: 'ai-'+Math.random(), 
-                name: AI_LIST[Math.floor(Math.random()*AI_LIST.length)], 
-                avatar: aiAvatar, 
-                cash: 50000, pos: 0, properties: [], isAI: true, jailTurns: 0, isBankrupt: false 
-            };
-            updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId), { players: arrayUnion(ai) });
-        };
+            <div id="p2-card" class="bg-slate-800 p-5 rounded-2xl border-l-8 border-blue-500 shadow-lg transition-all duration-300 opacity-50">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="user" class="text-blue-500"></i>
+                        <span class="text-xl font-bold">阿強 (P2)</span>
+                    </div>
+                    <span id="p2-money" class="text-2xl font-black text-yellow-400 font-mono">$15,000</span>
+                </div>
+            </div>
 
-        window.startGame = () => updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId), { status: 'PLAYING' });
+            <div class="bg-slate-800 p-8 rounded-3xl text-center border border-slate-700 shadow-2xl">
+                <div id="turn-text" class="text-xs font-bold text-slate-500 mb-4 uppercase tracking-widest">目前輪到</div>
+                <div class="flex flex-col items-center gap-6">
+                    <div id="dice-display" class="w-20 h-20 bg-slate-100 rounded-2xl flex items-center justify-center text-4xl font-black text-slate-900 shadow-inner">?</div>
+                    <button id="roll-btn" class="w-full py-4 bg-sky-600 hover:bg-sky-500 text-white rounded-xl font-black text-xl transition-all active:scale-95">
+                        開始擲骰子
+                    </button>
+                </div>
+            </div>
 
-        window.roll = () => {
-            if (isMoving) return;
-            sounds.dice();
-            const steps = Math.floor(Math.random() * 6) + 1;
-            const rots = { 1: [0,0], 2: [-90,0], 3: [0,-90], 4: [0,90], 5: [90,0], 6: [180,0] };
-            const d = document.getElementById('dice');
-            if (d) d.style.transform = `rotateX(${rots[steps][0]+720}deg) rotateY(${rots[steps][1]+720}deg)`;
-            setTimeout(() => jumpMove(steps), 1000);
-        };
+            <div class="bg-black/30 p-4 rounded-xl border border-slate-800 h-32 overflow-hidden text-[10px] font-mono text-slate-500">
+                <div class="font-bold text-slate-400 mb-2 border-b border-slate-800 pb-1 uppercase tracking-tighter">近期紀錄</div>
+                <div id="log-container">
+                    <div>> 系統初始化完成</div>
+                </div>
+            </div>
+        </div>
+    </main>
 
-        async function jumpMove(steps) {
-            isMoving = true;
-            let pIdx = roomData.currentPlayerIdx;
-            for (let i = 0; i < steps; i++) {
-                roomData.players[pIdx].pos = (roomData.players[pIdx].pos + 1) % TILES.length;
-                // 經過起點給 5000 元
-                if (roomData.players[pIdx].pos === 0) { roomData.players[pIdx].cash += 5000; sounds.buy(); }
-                sounds.move(); window.render();
-                await new Promise(r => setTimeout(r, 250));
-            }
-            isMoving = false;
-            handleAction();
-        }
+    <script>
+        lucide.createIcons();
 
-        async function handleAction() {
-            const p = roomData.players[roomData.currentPlayerIdx];
-            const t = TILES[p.pos];
-            let log = `${p.name} 到達 ${t.name}`;
+        const BOARD_SIZE = 11;
+        const PATH = [];
+        // 生成路徑 (順時針外圈)
+        for (let i = 0; i < 11; i++) PATH.push(i);
+        for (let i = 1; i < 11; i++) PATH.push((i + 1) * 11 - 1);
+        for (let i = 9; i >= 0; i--) PATH.push(10 * 11 + i);
+        for (let i = 9; i >= 1; i--) PATH.push(i * 11);
 
-            if (t.type === 'LAND') {
-                const ownerIdx = roomData.players.findIndex(pl => !pl.isBankrupt && pl.properties.some(pr => pr.id === t.id));
-                if (ownerIdx === -1) {
-                    if (p.isAI) {
-                        if (p.cash >= t.price) { p.cash -= t.price; p.properties.push({id: t.id, level: 0}); log += "買下土地"; sounds.buy(); }
-                        finish(log);
-                    } else { showModal = { type: 'BUY', data: t }; window.render(); }
-                } else if (ownerIdx === roomData.currentPlayerIdx) {
-                    const prop = p.properties.find(pr => pr.id === t.id);
-                    if (prop.level < 2) {
-                        if (p.isAI) {
-                            const cost = Math.floor(t.price * 0.8);
-                            if (p.cash >= cost + 10000) { p.cash -= cost; prop.level++; log += "加蓋房產"; sounds.buy(); }
-                            finish(log);
-                        } else { showModal = { type: 'BUILD', data: { ...t, level: prop.level } }; window.render(); }
-                    } else finish(log + "休息一下");
+        const players = [
+            { id: 1, name: '杰哥', pos: 0, money: 15000, color: '#ef4444' },
+            { id: 2, name: '阿強', pos: 0, money: 15000, color: '#3b82f6' }
+        ];
+        let turn = 0;
+
+        // 初始化棋盤
+        const boardEl = document.getElementById('board');
+        for (let i = 0; i < 121; i++) {
+            const cell = document.createElement('div');
+            const row = Math.floor(i / 11);
+            const col = i % 11;
+            const isEdge = row === 0 || row === 10 || col === 0 || col === 10;
+            
+            cell.className = isEdge ? 'cell' : 'bg-transparent border-none';
+            if (isEdge) {
+                if (i === 0) {
+                    cell.innerHTML = '<span class="text-red-500 font-black">GO</span>';
+                    cell.style.backgroundColor = '#fef08a';
                 } else {
-                    const owner = roomData.players[ownerIdx];
-                    const prop = owner.properties.find(pr => pr.id === t.id);
-                    const baseRent = Math.floor(t.price * 0.2);
-                    const rent = Math.floor(baseRent * Math.pow(2.5, prop.level));
-                    p.cash -= rent; owner.cash += rent;
-                    log += `，支付 $${rent} 租金給 ${owner.name}`;
-                    sounds.pay(); finish(log);
-                }
-            } else if (t.type === 'JAIL') {
-                p.jailTurns = 3;
-                log += "，進重案組反省！"; 
-                sounds.special(); 
-                if (p.isAI) finish(log);
-                else { showModal = { type: 'SPECIAL', data: { icon: '👮', title: '重案組', desc: '你在這裡被限制行動！系統會自動跳過你的回合。', log } }; window.render(); }
-            } else if (t.type === 'TAX') {
-                const tax = Math.floor(p.cash * 0.1); p.cash -= tax;
-                log += `，繳納 $${tax} 稅金`; 
-                sounds.pay(); 
-                if (p.isAI) finish(log);
-                else { showModal = { type: 'SPECIAL', data: { icon: '💸', title: '稅捐處', desc: `依法繳納所得稅 $${tax}。`, log } }; window.render(); }
-            } else if (t.type === 'CHANCE') {
-                const gain = (Math.floor(Math.random()*10)-4)*1000; p.cash += gain;
-                const sign = gain >= 0 ? "獲得意外之財" : "遺失金錢";
-                log += `，${sign} $${Math.abs(gain)}`;
-                sounds.special();
-                if (p.isAI) finish(log);
-                else { showModal = { type: 'SPECIAL', data: { icon: gain >= 0 ? '✨' : '❓', title: '機遇命運', desc: `${sign} $${Math.abs(gain)}！`, log } }; window.render(); }
-            } else finish(log);
-        }
-
-        window.closeSpecial = () => { const log = showModal.data.log; showModal = null; finish(log); };
-
-        window.confirmBuy = (buy) => {
-            const p = roomData.players[roomData.currentPlayerIdx];
-            if (buy && p.cash >= showModal.data.price) {
-                p.cash -= showModal.data.price; p.properties.push({id: showModal.data.id, level: 0});
-                sounds.buy(); finish(`${p.name} 買下 ${showModal.data.name}`);
-            } else finish(`${p.name} 路過 ${showModal.data.name}`);
-            showModal = null;
-        };
-
-        window.confirmBuild = (build) => {
-            const p = roomData.players[roomData.currentPlayerIdx];
-            const cost = Math.floor(showModal.data.price * 0.8);
-            if (build && p.cash >= cost) {
-                p.cash -= cost; const prop = p.properties.find(pr => pr.id === showModal.data.id);
-                prop.level++; sounds.buy(); finish(`${p.name} 在 ${showModal.data.name} 蓋房`);
-            } else finish(`${p.name} 沒蓋房子`);
-            showModal = null;
-        };
-
-        window.skipJail = async () => {
-            const pIdx = roomData.currentPlayerIdx;
-            const p = roomData.players[pIdx];
-            p.jailTurns--;
-            const log = `${p.avatar} ${p.name} 禁閉中，剩餘 ${p.jailTurns} 回合`;
-            await finish(log);
-        };
-
-        async function finish(log) {
-            for (let i = 0; i < roomData.players.length; i++) {
-                const p = roomData.players[i];
-                if (!p.isBankrupt && p.cash < 0) {
-                    p.isBankrupt = true;
-                    p.properties = []; 
-                    log += ` | ⚠️ ${p.name} 破產淘汰！`;
+                    cell.innerText = i;
                 }
             }
+            cell.id = `cell-${i}`;
+            boardEl.appendChild(cell);
+        }
 
-            const newLogs = [log, ...roomData.logs].slice(0, 6);
-            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId), {
-                players: roomData.players, 
-                currentPlayerIdx: (roomData.currentPlayerIdx + 1) % roomData.players.length,
-                logs: newLogs
+        function addLog(msg) {
+            const container = document.getElementById('log-container');
+            const div = document.createElement('div');
+            div.innerText = `> ${msg}`;
+            container.prepend(div);
+            if (container.childNodes.length > 6) container.lastChild.remove();
+        }
+
+        function playSfx(f) {
+            const a = new (window.AudioContext || window.webkitAudioContext)();
+            const o = a.createOscillator();
+            const g = a.createGain();
+            o.connect(g); g.connect(a.destination);
+            o.frequency.value = f;
+            g.gain.exponentialRampToValueAtTime(0.01, a.currentTime + 0.2);
+            o.start(); o.stop(a.currentTime + 0.2);
+        }
+
+        function updateUI() {
+            document.querySelectorAll('.player-token').forEach(t => t.remove());
+            players.forEach((p, idx) => {
+                const cell = document.getElementById(`cell-${p.pos}`);
+                const t = document.createElement('div');
+                t.className = 'player-token';
+                t.style.backgroundColor = p.color;
+                t.style.left = (idx * 5) + 'px';
+                t.style.top = (idx * 5) + 'px';
+                cell.appendChild(t);
+                document.getElementById(`p${p.id}-money`).innerText = `$${p.money.toLocaleString()}`;
             });
+            document.getElementById('p1-card').style.opacity = turn === 0 ? '1' : '0.5';
+            document.getElementById('p2-card').style.opacity = turn === 1 ? '1' : '0.5';
+            document.getElementById('p1-card').style.transform = turn === 0 ? 'scale(1.05)' : 'scale(1)';
+            document.getElementById('p2-card').style.transform = turn === 1 ? 'scale(1.05)' : 'scale(1)';
         }
 
-        function listen(rid) {
-            if (unsubscribeRoom) unsubscribeRoom();
-            unsubscribeRoom = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', rid), (s) => {
-                if (s.exists()) { roomData = s.data(); if(roomData.status === 'PLAYING') view = 'GAME'; window.render(); }
-            }, (err) => console.error(err));
-        }
+        document.getElementById('roll-btn').addEventListener('click', () => {
+            const btn = document.getElementById('roll-btn');
+            const disp = document.getElementById('dice-display');
+            btn.disabled = true;
+            playSfx(440);
 
-        onAuthStateChanged(auth, u => { user = u; window.render(); });
-        const init = async () => {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) { await signInWithCustomToken(auth, __initial_auth_token); } 
-            else { await signInAnonymously(auth); }
-        };
-        init();
+            let i = 0;
+            const timer = setInterval(() => {
+                disp.innerText = Math.floor(Math.random() * 6) + 1;
+                if (++i > 10) {
+                    clearInterval(timer);
+                    const r = Math.floor(Math.random() * 6) + 1;
+                    disp.innerText = r;
+                    
+                    const p = players[turn];
+                    const curIdx = PATH.indexOf(p.pos);
+                    const nextIdx = (curIdx + r) % PATH.length;
+                    
+                    if (nextIdx < curIdx) {
+                        p.money += 2000;
+                        addLog(`${p.name} 經過起點，領取 $2,000`);
+                    }
+                    p.pos = PATH[nextIdx];
+                    addLog(`${p.name} 擲出 ${r} 點`);
+                    
+                    turn = (turn + 1) % 2;
+                    updateUI();
+                    btn.disabled = false;
+                }
+            }, 60);
+        });
+
+        updateUI();
     </script>
 </body>
-</html>
+</html>"""
+
+# 將內容寫入檔案
+with open("index.html", "w", encoding="utf-8") as f:
+    f.write(html_v21_content)
